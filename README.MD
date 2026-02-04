@@ -1,7 +1,7 @@
 # Tiny Hellwing
 
 ## Propósito
-Este proyecto no tiene ánimo de lucro y fue creado como tutorial para enseñar a programar en MS-DOS. Más información en: [Tutorial en El General Failure](https://www.elgeneralfailure.com/2026/02/aprendiendo-programar-para-ms-dos-con.html)
+Este proyecto no tiene ánimo de lucro y fue creado como tutorial para enseñar a programar en MS-DOS. Más información en: [Tutorial en El General Failure](https://www.elgeneralfailure.com/2026/02/aprendiendo-programar-para-ms-dos-con.html). Gameplay completo: [https://www.youtube.com/watch?v=ctFYWD8VweI](https://www.youtube.com/watch?v=ctFYWD8VweI)
 
 ## Inspiración
 El juego está inspirado en la serie *Youjo Senki / Saga of Tanya the Evil* de Carlo Zen, adaptando elementos de su narrativa y personajes a un género bullet hell clásico.
