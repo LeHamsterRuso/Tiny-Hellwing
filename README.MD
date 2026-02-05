@@ -15,6 +15,11 @@ Este juego ha sido programado por Sebastián J. Moncho Maquet, aka Le hamster_ru
 ## Requisitos
 Para compilar y ejecutar este juego, necesitas:
 - Div 2 Games Studio instalado, incluyendo sus ejemplos.
+- 12 MB de RAM.
+- Procesador Pentium 100 MHz o superior.
+- Tarjeta gráfica VGA/SVGA.
+- Tarjeta de sonido SB16 o compatible.
+- Disco duro con 55 MB de espacio libre disponible.
 
 ## Compilación
 1. Instala Div 2 Games Studio con todos sus ejemplos.
