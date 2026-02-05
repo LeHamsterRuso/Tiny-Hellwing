@@ -14,7 +14,16 @@ Este juego ha sido programado por Sebastián J. Moncho Maquet, aka Le hamster_ru
 
 ## Requisitos
 Para compilar y ejecutar este juego, necesitas:
+- Sistema operativo MS-DOS o compatible (Windows 95, Windos 98, DoxBox, etc).
 - Div 2 Games Studio instalado, incluyendo sus ejemplos.
+- 16 MB de RAM (se recomiendan 32 MB para debuguear).
+- Procesador Pentium 100 MHz o superior.
+- Tarjeta gráfica VGA/SVGA.
+- Tarjeta de sonido SB16 o compatible.
+- Disco duro con 200 MB aprox de espacio libre disponible.
+
+Para jugar, necesitas:
+- Sistema operativo MS-DOS o compatible (Windows 95, Windos 98, DoxBox, etc).
 - 12 MB de RAM.
 - Procesador Pentium 100 MHz o superior.
 - Tarjeta gráfica VGA/SVGA.
