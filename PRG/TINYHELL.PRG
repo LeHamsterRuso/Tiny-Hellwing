@@ -265,6 +265,10 @@ CONST
     FRECUENCIA_PARPADEO = 5;            // Frames entre cada cambio de visibilidad durante parpadeo
     FRECUENCIA_PARPADEO_GAMEOVER = 30;  // Frames entre cada cambio de visibilidad en pantalla game over
 
+    // Limite de RAM para desactivar audio
+    RAM_MINIMA_MB = 10;                 // RAM minima requerida en MB para activar audio
+    RAM_MINIMA_KB = RAM_MINIMA_MB * 1024; // RAM minima en KB (calculada en tiempo de compilacion)
+
 // Variables globales del juego
 // Estas variables mantienen el estado del juego y son accesibles desde cualquier parte del programa.
 GLOBAL
@@ -314,6 +318,7 @@ GLOBAL
     resultado_menu_global = -1;         // Resultado del menu de pausa de cinematicas
     memoria_inicial = 0;                // Memoria libre al arrancar el juego (en KB)
     memoria_usada = 0;                  // Memoria consumida por el juego (en KB)
+    audio_desactivado = 0;              // Flag para desactivar audio si hay poca RAM (<10MB)
 
     // Definicion de struct para enemigo
     STRUCT enemigo[NUM_ENEMIGOS_MAXIMOS]
@@ -358,15 +363,15 @@ GLOBAL
     END
 
     // Estructuras de datos para cinematicas
-    STRUCT cinematics[10]
+    STRUCT cinematics[11]
         INT num_cg;
         INT siguiente_nivel;
-        STRUCT cgs[5]
+        STRUCT cgs[4]
             STRING fpg_ruta;
             STRING pal_ruta;
             STRING wav_ruta;
             INT num_paginas;
-            STRUCT paginas[10]
+            STRUCT paginas[8]
                 STRING linea1[50];
                 STRING linea2[50];
                 STRING linea3[50];
@@ -389,6 +394,11 @@ BEGIN
     // Capturar memoria libre antes de cargar recursos
     memoria_inicial = memory_free();
 
+    // Verificar si hay menos de 10 MB de RAM disponible (10240 KB)
+    IF (memoria_inicial < RAM_MINIMA_KB)
+        audio_desactivado = 1;
+    END
+
     // Arrancamos el juego a 320x200 a 60 FPS con la paleta cargada
     /* En DIV se suelen usar constantes como m320x200, pero aqui definimos la resolucion manualmente
        Al compilar, estas constantes se traducen en valores numericos.
@@ -407,6 +417,30 @@ BEGIN
      */
     set_mode(ANCHO_PANTALLA * 1000 + ALTO_PANTALLA);
     set_fps(FPS_JUEGO, 0);
+
+    if (audio_desactivado == 1)
+        write(0, 160, 80, 4, "Importante");
+        write(0, 160, 100, 4, "Audio desactivado por falta de RAM");
+        write(0, 160, 110, 4, "Requiere al menos 10MB de RAM libre");
+        write(0, 160, 120, 4, "Ahora puede jugar, pero sin audio");
+        write(0, 160, 140, 4, "[PULSA ESPACIO]");
+        WHILE(NOT ((KEY(_ESC) OR KEY(_ENTER)) OR KEY(_SPACE)))
+             FRAME;
+        END
+    ELSE
+        if (setup.master == 0 OR setup.sound_fx == 0)
+            write(0, 160, 80, 4, "Importante");
+            write(0, 160, 100, 4, "Audio desactivado por configuracion");
+            write(0, 160, 110, 4, "Revisa la configuración de tu tarjeta de sonido");
+            write(0, 160, 120, 4, "Ahora puede jugar, pero sin audio");
+            write(0, 160, 140, 4, "[PULSA ESPACIO]");
+            WHILE(NOT (KEY(_ESC) OR KEY(_ENTER) OR KEY(_SPACE)))
+                 FRAME;
+            END
+        END
+    END
+    
+    delete_text(all_text); // Limpiar textos de advertencia
 
     cargar_recursos_juego();
     init_cinematics();
@@ -449,33 +483,6 @@ BEGIN
             mostrar_textos_hud(); // Volver a mostrar textos del HUD despues de cerrar el menu
         END
 
-        // Verificar si debemos volver al menu principal
-        IF (volver_menu == 1)
-            // Limpiar todos los procesos
-            let_me_alone();
-
-            // Detener el scroll activo
-            stop_scroll(0);
-
-            // Limpiar graficos y textos
-            delete_text(all_text);
-            delete_draw(all_drawing);
-            clear_screen();
-
-            // Descargar FPG del nivel
-            limpiar_recursos_y_reiniciar();
-            salir_juego = 0;
-
-            // Reiniciar listas enlazadas
-            primera_bala_jugador_activa = -1;
-            primer_slot_libre_jugador = 0;
-            primera_bala_enemigo_activa = -1;
-            primer_slot_libre_enemigo = 0;
-            primera_enemigo_activo = -1;
-
-            // Iniciar nueva partida
-            iniciar_nueva_partida();
-        END
         IF (game_over == 1)
             FROM i=0 to FRAMES_ESPERA_EXPLOSION * FPS_JUEGO; // Esperar a que se vea la explosion del jugador
                 FRAME;  // Frames para ver la explosion
@@ -564,6 +571,11 @@ BEGIN
             // Calcular enemigos del nuevo nivel y cargar su FPG
             num_enemigos_nivel = calcular_num_enemigos(nivel_actual);
             enemigos_vivos = num_enemigos_nivel;
+            // Matar procesos que usan el FPG_LEVEL anterior antes de descargarlo
+            signal(type proceso_balas_jugador, s_kill);
+            signal(type proceso_balas_enemigo, s_kill);
+            signal(type explosion, s_kill);
+            signal(type explosion_pequena, s_kill);
             cargar_fpg_nivel(nivel_actual);
 
             // RESETEAR VIDAS AL PASAR DE NIVEL (nuevo nivel = nueva oportunidad)
@@ -625,7 +637,7 @@ BEGIN
         write_int(0, POS_X_FPS, POS_Y_FPS, 0, OFFSET fps);
 
         // Mostrar RAM usada (en KB)
-        write(0, POS_X_ETIQUETAS + 60, POS_Y_FPS, ALINEACION_IZQUIERDA, "RAM (KB):");
+        write(0, POS_X_ETIQUETAS + 60, POS_Y_FPS, ALINEACION_IZQUIERDA, "RAM:");
         write_int(0, POS_X_ETIQUETAS + 90, POS_Y_FPS, 0, OFFSET memoria_usada);
     END
 END
@@ -659,9 +671,7 @@ PRIVATE
     STRING numero_str;  // Numero del nivel como string
 BEGIN
     // Descargar el FPG anterior si existe
-    IF (FPG_LEVEL != 0)
-        unload_fpg(FPG_LEVEL);
-    END
+    descargar_fpg(&FPG_LEVEL);
 
     // Construir la ruta del FPG segun el nivel
     // LEVEL000.FPG, LEVEL001.FPG, ..., LEVEL009.FPG, LEVEL010.FPG, LEVEL011.FPG, LEVEL012.FPG
@@ -1978,6 +1988,14 @@ FUNCTION cargar_y_reproducir_wav(STRING ruta, INT loop_mode);
 PRIVATE
     INT id_texto;
 BEGIN
+    // Verificar si el audio está desactivado por poca RAM
+    IF (audio_desactivado == 1)
+        RETURN;
+    END
+    // Verificar si el audio está muteado o desactivado
+    IF (setup.master == 0 OR setup.sound_fx == 0)
+        RETURN;
+    END
     IF (ruta == musica_actual) RETURN; END
     detener_y_descargar_musica();
     id_texto = write(0, 160, 100, 4, "CARGANDO");
@@ -1997,10 +2015,73 @@ BEGIN
     IF (WAV_CHANNEL != 0)
         stop_sound(WAV_CHANNEL);
     END
-    IF (WAV_MUSIC != 0)
-        unload_wav(WAV_MUSIC);
-    END
+    descargar_wav(&WAV_MUSIC);
     musica_actual = "";
+END
+
+// FUNCION: descargar_fpg
+// Descripcion: Descarga un FPG si está cargado y resetea el ID
+FUNCTION descargar_fpg(INT id_fpg);
+BEGIN
+    IF (*id_fpg != 0)
+        unload_fpg(*id_fpg);
+        *id_fpg = 0;
+    END
+END
+
+// FUNCION: descargar_wav
+// Descripcion: Descarga un WAV si está cargado y resetea el ID
+FUNCTION descargar_wav(INT id_wav);
+BEGIN
+    IF (*id_wav != 0)
+        unload_wav(*id_wav);
+        *id_wav = 0;
+    END
+END
+
+//------------------------------------------------------------------------------
+// FUNCION: descargar_fnt
+// DESCRIPCION: Descarga una fuente si está cargada
+//------------------------------------------------------------------------------
+FUNCTION descargar_fnt(INT id_fnt);
+BEGIN
+    IF (*id_fnt != 0)
+        unload_fnt(*id_fnt);
+        *id_fnt = 0;
+    END
+END
+
+//------------------------------------------------------------------------------
+// FUNCION: cargar_fpg_si_no_cargado
+// DESCRIPCION: Carga un FPG solo si no está cargado
+//------------------------------------------------------------------------------
+FUNCTION cargar_fpg_si_no_cargado(INT id_fpg, STRING ruta);
+BEGIN
+    IF (*id_fpg == 0)
+        *id_fpg = load_fpg(ruta);
+    END
+END
+
+//------------------------------------------------------------------------------
+// FUNCION: cargar_wav_si_no_cargado
+// DESCRIPCION: Carga un WAV solo si no está cargado
+//------------------------------------------------------------------------------
+FUNCTION cargar_wav_si_no_cargado(INT id_wav, STRING ruta, INT loop_mode);
+BEGIN
+    IF (*id_wav == 0)
+        *id_wav = load_wav(ruta, loop_mode);
+    END
+END
+
+//------------------------------------------------------------------------------
+// FUNCION: cargar_fnt_si_no_cargado
+// DESCRIPCION: Carga una fuente solo si no está cargada
+//------------------------------------------------------------------------------
+FUNCTION cargar_fnt_si_no_cargado(INT id_fnt, STRING ruta);
+BEGIN
+    IF (*id_fnt == 0)
+        *id_fnt = load_fnt(ruta);
+    END
 END
 
 //------------------------------------------------------------------------------
@@ -2010,11 +2091,13 @@ END
 FUNCTION limpiar_recursos_y_reiniciar();
 BEGIN
     // Descargar FPG del nivel
-    IF (FPG_LEVEL != 0)
-        unload_fpg(FPG_LEVEL);
-        FPG_LEVEL = 0;
-    END
+    descargar_fpg(&FPG_LEVEL);
 
+    // Descargar FPG de inicio si está cargado
+    descargar_fpg(&FPG_START);
+    
+    // Descargar música si está cargada
+    detener_y_descargar_musica();
     // Reiniciar variables globales del juego
     puntos = 0;
     nivel = 1;
@@ -2187,23 +2270,31 @@ BEGIN
             END
             IF (manejar_resultado_menu(resultado_pagina_global, id_marco, cinematics[cinematic_id].siguiente_nivel) > 0)
                 salir_cinematica_local = 1;
+                // Limpiar recursos antes de salir
+                signal(id_marco, s_kill);
+                descargar_fpg(&fpg_cg);
                 BREAK;
             END
         END
 
-        signal(id_marco, s_kill);
-        unload_fpg(fpg_cg);
+        // Solo limpiar si no se hizo antes
+        IF (salir_cinematica_local == 0)
+            signal(id_marco, s_kill);
+            descargar_fpg(&fpg_cg);
+        END
     END
 
     // Si el usuario eligió salir al DOS, no hacer transición ni cuenta atrás
     IF (salir_juego == 1)
         salir_juego = 0;
+        detener_y_descargar_musica();
         exit(TEXTO_SALIDA, 0);
     END
     // Si el usuario eligió volver al menú principal, guardar puntuación si corresponde y volver inmediatamente
     IF (volver_menu == 1)
         actualizar_top_scores(puntos);
         guardar_top_scores();
+        detener_y_descargar_musica();
         RETURN(1);
     END
 
@@ -2218,9 +2309,7 @@ END
 //------------------------------------------------------------------------------
 FUNCTION mostrar_creditos();
 BEGIN
-    if (FNT_COPY == 0)
-        FNT_COPY = load_fnt(RUTA_FNT_COPY);
-    END
+    cargar_fnt_si_no_cargado(&FNT_COPY, RUTA_FNT_COPY);
     write(FNT_COPY, 10, 3, ALINEACION_IZQUIERDA, "Le Hamster Ruso (2026)");
     write(FNT_COPY, 10, 13, ALINEACION_IZQUIERDA, "Desarrollado como tutorial");
     write(FNT_COPY, 10, 23, ALINEACION_IZQUIERDA, "educativo para el aprendizaje de");
@@ -2241,7 +2330,7 @@ PRIVATE
     INT id_texto_parpadeo = 0;  // ID del texto parpadeante
 BEGIN
     // Cargar FPG de inicio con su propia paleta
-    FPG_START = load_fpg(RUTA_FPG_START);
+    cargar_fpg_si_no_cargado(&FPG_START, RUTA_FPG_START);
     load_pal(RUTA_FPG_START);
 
     detener_y_descargar_musica();
@@ -2304,7 +2393,7 @@ PRIVATE
     INT menu_centro_y;  // Posicion Y del centro del menu
 BEGIN
     // Cargar FPG de inicio si no esta cargado
-    FPG_START = load_fpg(RUTA_FPG_START);
+    cargar_fpg_si_no_cargado(&FPG_START, RUTA_FPG_START);
 
     // Mostrar grafico 3 del FPG en la parte inferior (recuadro 160x50)
     id_proceso_grafico = grafico_menu();
@@ -2386,7 +2475,7 @@ BEGIN
     delete_text(all_text);
     signal(id_proceso_grafico, s_kill);
     clear_screen();
-    unload_fpg(FPG_START);
+    descargar_fpg(&FPG_START);
 
     // Ejecutar la opcion seleccionada
     IF (opcion == 2)
@@ -2482,6 +2571,8 @@ BEGIN
     signal(type jugador, s_kill);
     signal(type proceso_balas_jugador, s_kill);  // Matar procesos de balas del jugador anteriores
     signal(type proceso_balas_enemigo, s_kill);  // Matar procesos de balas enemigas anteriores
+    signal(type proceso_enemigos, s_kill);       // Matar proceso de control de enemigos
+    signal(type proceso_enemigo_visual, s_kill); // Matar procesos visuales de enemigos
     // No matar explosiones para que se vean durante la cuenta regresiva
 
     // Limpiar dibujos, textos y procesos residuales del nivel anterior
@@ -2539,7 +2630,6 @@ BEGIN
     // Actualizar FPG del jugador segun vidas actuales
     // (importante para mantener el estado visual correcto entre niveles)
     vidas_jugador = 3;
-    FPG_PLAYER = load_fpg(RUTA_FPG_PLAYER);  // Recargar por si acaso
 
     // Creamos naves pero sin movimiento
     crear_enemigos();  // Creamos enemigos
@@ -3568,21 +3658,21 @@ FUNCTION cargar_recursos_juego()
 BEGIN
     // Cargar FPG del jugador (el del nivel se carga en cargar_fpg_nivel)
     // FPG_LEVEL se cargara dinamicamente segun el nivel actual
-    FPG_PLAYER = load_fpg(RUTA_FPG_PLAYER);
-    FPG_PLAYERME = load_fpg(RUTA_FPG_PLAYERME);
-    FPG_PLAYERLO = load_fpg(RUTA_FPG_PLAYERLO);
+    cargar_fpg_si_no_cargado(&FPG_PLAYER, RUTA_FPG_PLAYER);
+    cargar_fpg_si_no_cargado(&FPG_PLAYERME, RUTA_FPG_PLAYERME);
+    cargar_fpg_si_no_cargado(&FPG_PLAYERLO, RUTA_FPG_PLAYERLO);
 
     // Cargar fuentes
-    FNT_HUD = load_fnt(RUTA_FNT_HUD);
-    FNT_NORMAL = load_fnt(RUTA_FNT_NORMAL);
-    FNT_COUNTER = load_fnt(RUTA_FNT_COUNTER);
-    FNT_PRESS = load_fnt(RUTA_FNT_PRESS);
-    FNT_GAMEOVER = load_fnt(RUTA_FNT_GAMEOVER);
-    FNT_COPY = load_fnt(RUTA_FNT_COPY);
-    FNT_X = load_fnt(RUTA_FNT_X);
+    cargar_fnt_si_no_cargado(&FNT_HUD, RUTA_FNT_HUD);
+    cargar_fnt_si_no_cargado(&FNT_NORMAL, RUTA_FNT_NORMAL);
+    cargar_fnt_si_no_cargado(&FNT_COUNTER, RUTA_FNT_COUNTER);
+    cargar_fnt_si_no_cargado(&FNT_PRESS, RUTA_FNT_PRESS);
+    cargar_fnt_si_no_cargado(&FNT_GAMEOVER, RUTA_FNT_GAMEOVER);
+    cargar_fnt_si_no_cargado(&FNT_COPY, RUTA_FNT_COPY);
+    cargar_fnt_si_no_cargado(&FNT_X, RUTA_FNT_X);
 
     // Cargar sonidos
-    WAV_DISPARO = load_wav(RUTA_WAV_DISPARO, LOOP_NO); // LOOP_NO = Reproducción normal
+    cargar_wav_si_no_cargado(&WAV_DISPARO, RUTA_WAV_DISPARO, LOOP_NO); // LOOP_NO = Reproducción normal
 END
 
 //------------------------------------------------------------------------------
