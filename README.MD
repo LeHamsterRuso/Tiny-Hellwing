@@ -14,7 +14,7 @@ Este juego ha sido programado por Sebastián J. Moncho Maquet, aka Le hamster_ru
 
 ## Requisitos
 Para compilar y ejecutar este juego, necesitas:
-- Sistema operativo MS-DOS o compatible (Windows 95, Windos 98, DoxBox, etc).
+- Sistema operativo MS-DOS o compatible (Windows 95, Windos 98, DOSBox, etc).
 - Div 2 Games Studio instalado, incluyendo sus ejemplos.
 - 28 MB de RAM (16 framework + 12 del juego)
 - Procesador Pentium 100 MHz o superior.
@@ -23,7 +23,7 @@ Para compilar y ejecutar este juego, necesitas:
 - Disco duro con 200 MB aprox de espacio libre disponible.
 
 Para jugar, necesitas:
-- Sistema operativo MS-DOS o compatible (Windows 95, Windos 98, DoxBox, etc).
+- Sistema operativo MS-DOS o compatible (Windows 95, Windos 98, DOSBox, etc).
 - 12 MB de RAM.
 - Procesador Pentium 100 MHz o superior.
 - Tarjeta gráfica VGA/SVGA.
@@ -34,6 +34,9 @@ Para jugar, necesitas:
 1. Instala Div 2 Games Studio con todos sus ejemplos.
 2. Abre el proyecto en Div 2 Games Studio.
 3. Compila el archivo principal `PRG/TINYHELL.PRG`.
+
+## Tildes y formatos
+Al estar el código en español, dependiendo de si estás en un entorno MS-DOS real o en un DOSBox, puedes tener problemas con las tildes. Esto puede causar problemas de visualización en los diálogos (carácteres raros) o de overflow (strings más largos de la talla permitida). En la raíz del proyecto dejo una herramienta build_msdos.sh para Linux/MacOS que permite convertir el fichero de UTF8 al formato esperado por DOS. Esta herramienta no machaca el fichero original, si no que crea una copia VSHOOTM2.PRG convertida.
 
 ## Configuración para DOSBox
 Para que el audio se escuche correctamente en DOSBox en Windows, es necesario configurar `core=dynamic` y `cycles=95000`. En principio, esta configuración no es necesaria en Linux/Mac.
