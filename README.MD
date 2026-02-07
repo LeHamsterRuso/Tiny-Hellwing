@@ -24,7 +24,7 @@ Para compilar y ejecutar este juego, necesitas:
 
 Para jugar, necesitas:
 - Sistema operativo MS-DOS o compatible (Windows 95, Windos 98, DOSBox, etc).
-- 12 MB de RAM.
+- 4 MB de RAM (sin audio); 12 MB de RAM con audio.
 - Procesador Pentium 100 MHz o superior.
 - Tarjeta gráfica VGA/SVGA.
 - Tarjeta de sonido SB16 o compatible.
