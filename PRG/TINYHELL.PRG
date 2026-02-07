@@ -1,16 +1,16 @@
 //------------------------------------------------------------------------------
-// TITULO:      VSHOOT10.PRG - Sistema Completo de Juego con Cinem�ticas
+// TITULO:      VSHOOT10.PRG - Sistema Completo de Juego con Cinemáticas
 // AUTOR:       Sebastian J. MONCHO MAQUET
 // FECHA:       02/02/2026
 // DESCRIPCION: Sistema de niveles con dificultad progresiva y narrativa completa.
-//              - 14 niveles (LEVEL000.FPG a LEVEL013.FPG) con m�sica espec�fica por rangos
+//              - 14 niveles (LEVEL000.FPG a LEVEL013.FPG) con música específica por rangos
 //              - Numero creciente de enemigos: nivel 0=40, nivel 1=50, ..., nivel 13=160+
 //              - Distribucion escalonada en cada nivel: pocos enemigos al inicio, mas al final
 //              - Sistema de vidas (3 toques antes de morir)
-//              - 11 cinem�ticas con narrativa basada en Tanya the Evil (lore de "Youjo Senki")
-//              - M�sica din�mica: LEVEL02/03/04/07/08/10/12/13.WAV + ENDING.WAV para cinem�tica final
+//              - 11 cinemáticas con narrativa basada en Tanya the Evil (lore de "Youjo Senki")
+//              - Música dinámica: LEVEL02/03/04/07/08/10/12/13.WAV + ENDING.WAV para cinemática final
 //              - Controles: flechas para mover, espacio para disparar, ESC para salir
-//              - Final completo con vuelta autom�tica al men� principal
+//              - Final completo con vuelta automática al menú principal
 
 //
 // NOTA:        Usa las flechas para mover la nave, espacio para disparar y ESC para salir.
@@ -29,8 +29,10 @@ CONST
     // Usar constantes reduce el consumo de memoria y los calculos en tiempo de ejecucion.
     // - Si haces una resta o una suma entre constantes, el compilador lo calcula en tiempo de compilacion y no entiempo de ejecucion.
 
+    _DEBUG_ = 0;    // Flag de debug (0 = desactivado, 1 = activado). Sirve para saltar el nivel con la tecla P y ver el consumo de RAM y el contador de FPS en pantalla.
+
     // Mensajes de texto al salir del juego
-    TEXTO_SALIDA = "Hasta la pr�xima, camarada.";
+    TEXTO_SALIDA = "Hasta la próxima, camarada.";
 
     // Resolucion y rendimiento
     // 320x200 pixeles a 60 FPS
@@ -74,7 +76,7 @@ CONST
 
     // Enemigo tipo 3
     VEL_ENEMIGO3_VERTICAL = 2;          // Velocidad vertical del enemigo tipo 3 (de arriba a abajo)
-    VEL_ENEMIGO3_HORIZONTAL = 1;        // Velocidad horizontal del enemigo tipo 3 (acerc�ndose al jugador)
+    VEL_ENEMIGO3_HORIZONTAL = 1;        // Velocidad horizontal del enemigo tipo 3 (acercándose al jugador)
     COLOR_ENEMIGO3 = 114;               // Color del enemigo tipo 3 (paleta DIV2.PAL)
 
     // Balas
@@ -97,7 +99,7 @@ CONST
     OFFSET_DISPARO_Y = 30;              // Offset Y para la posicion del disparo del jugador
 
     // Cuenta regresiva
-    SEGUNDOS_CUENTA_REGRESIVA = 5;      // Segundos para la cuenta regresiva al acabar un nivel
+    SEGUNDOS_CUENTA_REGRESIVA = 3;      // Segundos para la cuenta regresiva al acabar un nivel
 
     // Posiciones de UI
     POS_X_ETIQUETAS = 10;               // Posicion X para etiquetas de texto
@@ -130,7 +132,7 @@ CONST
     GRAFICO_ENEMIGO1 = 2;               // Grafico FPG para enemigo tipo 1
     GRAFICO_ENEMIGO2 = 3;               // Grafico FPG para enemigo tipo 2
     ANGULO_ROTACION_ENEMIGO = 15000;   // Angulo de rotacion para enemigos tipo 1 (15 grados * 1000)
-    ANGULO_ROTACION_ENEMIGO_OPUESTA = 345000; // Angulo opuesto (360� - 15�)
+    ANGULO_ROTACION_ENEMIGO_OPUESTA = 345000; // Angulo opuesto (360° - 15°)
     ESCALA_ENEMIGO = 100;               // Escala para xput de enemigos
 
     // Posiciones de texto para pantallas de cuenta regresiva
@@ -183,11 +185,11 @@ CONST
     RUTA_FNT_COUNTER = "TANYA/COUNTER.FNT"; // Ruta del FNT para contadores
     RUTA_FNT_PRESS = "TANYA/PRESS.FNT";     // Ruta del FNT para "PULSA ESPACIO"
     RUTA_FNT_GAMEOVER = "TANYA/GAMEOVER.FNT"; // Ruta del FNT para "GAME OVER"
-    RUTA_FNT_COPY = "TANYA/COPY.FNT";        // Ruta del FNT para cr�ditos
+    RUTA_FNT_COPY = "TANYA/COPY.FNT";        // Ruta del FNT para créditos
     RUTA_FNT_X = "TANYA/X.FNT";        // Ruta del FNT para cuenta Twitter
     RUTA_FPG_START = "TANYA/START.FPG";   // Ruta del FPG para pantalla de inicio
-    RUTA_WAV_TITLE = "TANYA/TITLE.WAV";   // Ruta del WAV para m�sica de pantalla de inicio
-    RUTA_WAV_DISPARO = "../PCM/TOKENKAI/PISTOLA0.WAV"; // Ruta del WAV para sonido de disparo (inclu�do en los ejemplos de DIV2, NO EN MI GITHUB)
+    RUTA_WAV_TITLE = "TANYA/TITLE.WAV";   // Ruta del WAV para música de pantalla de inicio
+    RUTA_WAV_DISPARO = "../PCM/TOKENKAI/PISTOLA0.WAV"; // Ruta del WAV para sonido de disparo (incluído en los ejemplos de DIV2, NO EN MI GITHUB)
 
     // Rutas de archivos para cinematicas
     RUTA_FPG_CG001 = "TANYA/CG001.FPG"; // Ruta del FPG para cinematica 1
@@ -211,24 +213,25 @@ CONST
     RUTA_FPG_CG019 = "TANYA/CG019.FPG"; // Ruta del FPG para cinematica 19
     RUTA_FPG_CG020 = "TANYA/CG020.FPG"; // Ruta del FPG para cinematica 20
     RUTA_FPG_CG021 = "TANYA/CG021.FPG"; // Ruta del FPG para cinematica 21
-    RUTA_WAV_CG001 = "TANYA/CG001.WAV"; // Ruta del WAV para m�sica de cinematica 1
-    RUTA_WAV_CG002 = "TANYA/CG002.WAV"; // Ruta del WAV para m�sica de cinematica 2
-    RUTA_WAV_CG003 = "TANYA/CG003.WAV"; // Ruta del WAV para m�sica de cinematica 3
-    RUTA_WAV_CG004 = "TANYA/CG004.WAV"; // Ruta del WAV para m�sica de cinematica 4
-    RUTA_WAV_LEVEL02 = "TANYA/LEVEL02.WAV"; // Ruta del WAV para m�sica del nivel 2
-    RUTA_WAV_LEVEL03 = "TANYA/LEVEL03.WAV"; // Ruta del WAV para m�sica del nivel 3
-    RUTA_WAV_LEVEL04 = "TANYA/LEVEL04.WAV"; // Ruta del WAV para m�sica del nivel 4
-    RUTA_WAV_LEVEL7 = "TANYA/LEVEL07.WAV"; // Ruta del WAV para m�sica del nivel 7
-    RUTA_WAV_LEVEL08 = "TANYA/LEVEL08.WAV"; // Ruta del WAV para m�sica del nivel 8
-    RUTA_WAV_LEVEL10 = "TANYA/LEVEL10.WAV"; // Ruta del WAV para m�sica del nivel 10
-    RUTA_WAV_LEVEL12 = "TANYA/LEVEL12.WAV"; // Ruta del WAV para m�sica del nivel 12
-    RUTA_WAV_LEVEL13 = "TANYA/LEVEL13.WAV"; // Ruta del WAV para m�sica del nivel 13
-    RUTA_WAV_ENDING = "TANYA/ENDING.WAV"; // Ruta del WAV para m�sica de la cinem�tica final
-    VOL_MAX = 256;                      // Volumen m�ximo (0 m�nimo, 256 m�ximo)
-    FREQ_NORMAL = 256;                  // Frecuencia normal (0 grave m�ximo, 256 normal, 512 agudo m�ximo)
-    FREQ_AGUDA = 512;                   // Frecuencia aguda m�xima
-    LOOP_NO = 0;                        // Reproducci�n normal (no bucle)
-    LOOP_SI = 1;                        // Reproducci�n en bucle
+    RUTA_WAV_CG001 = "TANYA/CG001.WAV"; // Ruta del WAV para música de cinematica 1
+    RUTA_WAV_CG002 = "TANYA/CG002.WAV"; // Ruta del WAV para música de cinematica 2
+    RUTA_WAV_CG003 = "TANYA/CG003.WAV"; // Ruta del WAV para música de cinematica 3
+    RUTA_WAV_CG004 = "TANYA/CG004.WAV"; // Ruta del WAV para música de cinematica 4
+    RUTA_WAV_LEVEL01 = "TANYA/LEVEL01.WAV"; // Ruta del WAV para música del nivel 1
+    RUTA_WAV_LEVEL02 = "TANYA/LEVEL02.WAV"; // Ruta del WAV para música del nivel 2
+    RUTA_WAV_LEVEL03 = "TANYA/LEVEL03.WAV"; // Ruta del WAV para música del nivel 3
+    RUTA_WAV_LEVEL04 = "TANYA/LEVEL04.WAV"; // Ruta del WAV para música del nivel 4
+    RUTA_WAV_LEVEL7 = "TANYA/LEVEL07.WAV"; // Ruta del WAV para música del nivel 7
+    RUTA_WAV_LEVEL08 = "TANYA/LEVEL08.WAV"; // Ruta del WAV para música del nivel 8
+    RUTA_WAV_LEVEL10 = "TANYA/LEVEL10.WAV"; // Ruta del WAV para música del nivel 10
+    RUTA_WAV_LEVEL12 = "TANYA/LEVEL12.WAV"; // Ruta del WAV para música del nivel 12
+    RUTA_WAV_LEVEL13 = "TANYA/LEVEL13.WAV"; // Ruta del WAV para música del nivel 13
+    RUTA_WAV_ENDING = "TANYA/ENDING.WAV"; // Ruta del WAV para música de la cinemática final
+    VOL_MAX = 256;                      // Volumen máximo (0 mínimo, 256 máximo)
+    FREQ_NORMAL = 256;                  // Frecuencia normal (0 grave máximo, 256 normal, 512 agudo máximo)
+    FREQ_AGUDA = 512;                   // Frecuencia aguda máxima
+    LOOP_NO = 0;                        // Reproducción normal (no bucle)
+    LOOP_SI = 1;                        // Reproducción en bucle
     FONDO_SD = 1;                         // Fondo de pantalla (screen data)
 
     // Parametros del menu principal
@@ -278,6 +281,7 @@ GLOBAL
     game_over = 0;                      // Indicador de estado de juego (0 = jugando, 1 = game over)
     enemigo_muerto_id = 0;              // ID del enemigo marcado como "muerto"
     controles_activos = 0;              // Contemplaa si los controles del jugador estan activos (1) o desactivados (0), empleado, por ejemplo, durante la cuenta regresiva
+    STRING musica_actual = "";          // Ruta de la música actualmente sonando
     primera_bala_jugador_activa = -1;   // Indice de la primera bala jugador activa en la lista enlazada (-1 = lista vacia)
     primer_slot_libre_jugador = 0;      // Indice del primer slot libre para balas jugador
     primera_bala_enemigo_activa = -1;   // Indice de la primera bala enemigo activa en la lista enlazada (-1 = lista vacia)
@@ -290,11 +294,11 @@ GLOBAL
     FNT_COUNTER = 0;                    // Codigo del fichero FNT para contadores
     FNT_PRESS = 0;                      // Codigo del fichero FNT para "PULSA ESPACIO"
     FNT_GAMEOVER = 0;                   // Codigo del fichero FNT para "GAME OVER"
-    FNT_COPY = 0;                       // Codigo del fichero FNT para cr�ditos
+    FNT_COPY = 0;                       // Codigo del fichero FNT para créditos
     FNT_X = 0;                          // Codigo del fichero FNT para cuenta Twitter
     FPG_START = 0;                      // Codigo del fichero FPG para pantalla de inicio
-    WAV_CHANNEL = 0;                    // Canal de sonido para la m�sica de fondo
-    WAV_MUSIC = 0;                      // Codigo del fichero WAV para m�sica de pantalla de inicio
+    WAV_CHANNEL = 0;                    // Canal de sonido para la música de fondo
+    WAV_MUSIC = 0;                      // Codigo del fichero WAV para música de pantalla de inicio
     WAV_DISPARO = 0;                    // Codigo del fichero WAV para el disparo
     scroll_y_objetivo = 0;              // Posicion Y objetivo del scroll (para movimiento automatico)
     contador_scroll = 0;                // Contador para scroll lento (mueve 1 pixel cada 3 frames)
@@ -429,42 +433,7 @@ BEGIN
             delete_draw(all_drawing);
             clear_screen();
 
-            // Descargar FPG del nivel
-            IF (FPG_LEVEL != 0)
-                unload_fpg(FPG_LEVEL);
-                FPG_LEVEL = 0;
-            END
-
-            // Descargar musica si esta cargada
-            IF (WAV_CHANNEL != 0)
-                stop_sound(WAV_CHANNEL);
-                WAV_CHANNEL = 0;
-            END
-            IF (WAV_MUSIC != 0)
-                unload_wav(WAV_MUSIC);
-                WAV_MUSIC = 0;
-            END
-
-            // Reiniciar variables globales del juego
-            puntos = 0;
-            nivel = 1;
-            nivel_actual = NIVEL_INICIAL;
-            game_over = 0;
-            vidas_jugador = VIDAS_INICIALES;
-            jugador_inmune = 0;
-            juego_pausado = 0;
-            controles_activos = 0;
-            scroll_y_objetivo = 0;
-            contador_scroll = 0;
-            volver_menu = 0;
-            saltar_cinematica = 0;
-
-            // Reiniciar listas enlazadas
-            primera_bala_jugador_activa = -1;
-            primer_slot_libre_jugador = 0;
-            primera_bala_enemigo_activa = -1;
-            primer_slot_libre_enemigo = 0;
-            primera_enemigo_activo = -1;
+            limpiar_recursos_y_reiniciar();
 
             // Iniciar nueva partida
             iniciar_nueva_partida();
@@ -477,6 +446,7 @@ BEGIN
         IF (key(_ESC))
             // Mostrar menu de confirmacion de salida
             confirmar_salida();
+            mostrar_textos_hud(); // Volver a mostrar textos del HUD despues de cerrar el menu
         END
 
         // Verificar si debemos volver al menu principal
@@ -493,36 +463,7 @@ BEGIN
             clear_screen();
 
             // Descargar FPG del nivel
-            IF (FPG_LEVEL != 0)
-                unload_fpg(FPG_LEVEL);
-                FPG_LEVEL = 0;
-            END
-
-            // Descargar musica si esta cargada
-            IF (WAV_CHANNEL != 0)
-                stop_sound(WAV_CHANNEL);
-                WAV_CHANNEL = 0;
-            END
-            IF (WAV_MUSIC != 0)
-                unload_wav(WAV_MUSIC);
-                WAV_MUSIC = 0;
-            END
-
-            // Reiniciar variables globales del juego
-            puntos = 0;
-            nivel = 1;
-            nivel_actual = NIVEL_INICIAL;
-            game_over = 0;
-            vidas_jugador = VIDAS_INICIALES;
-            jugador_inmune = 0;
-            juego_pausado = 0;
-            controles_activos = 0;
-            scroll_y_objetivo = 0;
-            contador_scroll = 0;
-            volver_menu = 0;
-
-            // Resetear flags de cinem�ticas para nueva partida
-            saltar_cinematica = 0;
+            limpiar_recursos_y_reiniciar();
             salir_juego = 0;
 
             // Reiniciar listas enlazadas
@@ -604,12 +545,12 @@ BEGIN
             END
             IF (nivel == 14 && volver_menu == 0)  // Acabamos de completar nivel 13
                 mostrar_cinematica_final(10);
-                volver_menu = 1;  // Fin del juego, volver al men� principal
+                volver_menu = 1;  // Fin del juego, volver al menú principal
             END
 
-            // Si el usuario eligi� volver al men� desde la cinem�tica, dejar que el bloque principal lo maneje
+            // Si el usuario eligió volver al menú desde la cinemática, dejar que el bloque principal lo maneje
             IF (volver_menu == 1)
-                CONTINUE;  // El bloque de l�nea 450 har� toda la limpieza y reset
+                CONTINUE;  // El bloque de línea 450 hará toda la limpieza y reset
             END
 
             // Resetear flag de saltar cinematica
@@ -655,7 +596,7 @@ PRIVATE
     INT resultado = 0;
 BEGIN
     stop_scroll(0);  // Detener scroll
-    saltar_cinematica = 0;  // Resetear flag para mostrar cinem�tica
+    saltar_cinematica = 0;  // Resetear flag para mostrar cinemática
     resultado = cinematica(cinematic_id);
     RETURN(resultado);
 END
@@ -670,7 +611,6 @@ BEGIN
     // Dibujar labels estaticos para los textos
     write(FNT_HUD, POS_X_ETIQUETAS, POS_Y_PUNTOS, ALINEACION_IZQUIERDA, "PUNTOS:");
     write(FNT_HUD, POS_X_ETIQUETAS, POS_Y_NIVEL, ALINEACION_IZQUIERDA, "NIVEL:");
-    write(0, POS_X_ETIQUETAS, POS_Y_FPS, ALINEACION_IZQUIERDA, "FPS:");
     write(FNT_X, POS_X_ETIQUETAS+215, POS_Y_FPS-3, ALINEACION_IZQUIERDA, "x.com/Hamster_ruso");
 
     // Dibujar valores dinamicos usando write_int
@@ -678,11 +618,16 @@ BEGIN
     // El valor se actualizara automaticamente al cambiar la variable
     write_int(FNT_HUD, POS_X_VALORES, POS_Y_PUNTOS, 0, OFFSET puntos);
     write_int(FNT_HUD, POS_X_VALORES, POS_Y_NIVEL, 0, OFFSET nivel);
-    write_int(0, POS_X_FPS, POS_Y_FPS, 0, OFFSET fps);
 
-    // Mostrar RAM usada (en KB)
-    write(0, POS_X_ETIQUETAS + 60, POS_Y_FPS, ALINEACION_IZQUIERDA, "RAM:");
-    write_int(0, POS_X_ETIQUETAS + 90, POS_Y_FPS, 0, OFFSET memoria_usada);
+    IF (_DEBUG_ == 1)
+        // Mostrar FPS reales (solo en modo debug)
+        write(0, POS_X_ETIQUETAS, POS_Y_FPS, ALINEACION_IZQUIERDA, "FPS:");
+        write_int(0, POS_X_FPS, POS_Y_FPS, 0, OFFSET fps);
+
+        // Mostrar RAM usada (en KB)
+        write(0, POS_X_ETIQUETAS + 60, POS_Y_FPS, ALINEACION_IZQUIERDA, "RAM (KB):");
+        write_int(0, POS_X_ETIQUETAS + 90, POS_Y_FPS, 0, OFFSET memoria_usada);
+    END
 END
 
 //------------------------------------------------------------------------------
@@ -898,14 +843,14 @@ BEGIN
             siguiente = bala_jugador[actual].siguiente;
             debe_eliminar = 0;
 
-            // Solo mover si el juego no est� pausado
+            // Solo mover si el juego no está pausado
             IF (juego_pausado == 0)
                 // Mover la bala segun deltas precalculados
                 bala_jugador[actual].x += bala_jugador[actual].dx;
                 bala_jugador[actual].y += bala_jugador[actual].dy;
             END
 
-            // Solo verificar colisiones si el juego no est� pausado
+            // Solo verificar colisiones si el juego no está pausado
             IF (juego_pausado == 0 AND (bala_jugador[actual].y < scroll.y0 - MARGEN_VISIBLE_ARRIBA OR
                 bala_jugador[actual].y > scroll.y0 + ALTO_PANTALLA + MARGEN_VISIBLE_ABAJO OR
                 bala_jugador[actual].x < 0 OR
@@ -949,7 +894,7 @@ BEGIN
                 bala_jugador[actual].siguiente = primer_slot_libre_jugador;
                 primer_slot_libre_jugador = actual;
             ELSE
-                // Dibujar la bala solo si el juego no est� pausado (convertir coordenadas de mapa a pantalla)
+                // Dibujar la bala solo si el juego no está pausado (convertir coordenadas de mapa a pantalla)
                 IF (juego_pausado == 0)
                     bala_jugador[actual].draw_id = draw(TIPO_DIBUJO_CIRCULO_RELLENO, bala_jugador[actual].color, OPACIDAD_DRAW, REGION_DRAW,
                         (bala_jugador[actual].x - scroll.x0) - bala_jugador[actual].tamano,
@@ -999,21 +944,21 @@ BEGIN
             siguiente = bala_enemigo[actual].siguiente;
             debe_eliminar = 0;
 
-            // Solo mover si el juego no est� pausado
+            // Solo mover si el juego no está pausado
             IF (juego_pausado == 0)
                 // Mover la bala segun deltas precalculados
                 bala_enemigo[actual].x += bala_enemigo[actual].dx;
                 bala_enemigo[actual].y += bala_enemigo[actual].dy;
             END
 
-            // Solo verificar colisiones si el juego no est� pausado
+            // Solo verificar colisiones si el juego no está pausado
             IF (juego_pausado == 0 AND (bala_enemigo[actual].y < scroll.y0 - MARGEN_VISIBLE_ARRIBA OR
                 bala_enemigo[actual].y > scroll.y0 + ALTO_PANTALLA + MARGEN_VISIBLE_ABAJO OR
                 bala_enemigo[actual].x < 0 OR
                 bala_enemigo[actual].x > ANCHO_PANTALLA))
                 debe_eliminar = 1;
             ELSE
-                // Colision con jugador (solo si no esta inmune y el juego no est� pausado)
+                // Colision con jugador (solo si no esta inmune y el juego no está pausado)
                 IF (juego_pausado == 0 AND id_player != 0 AND jugador_inmune == 0)
                     // Bounding box rapida
                     IF (abs(bala_enemigo[actual].x - id_player.x) < MARGEN_BOUNDING_BOX AND abs(bala_enemigo[actual].y - id_player.y) < MARGEN_BOUNDING_BOX)
@@ -1066,7 +1011,7 @@ BEGIN
                 bala_enemigo[actual].siguiente = primer_slot_libre_enemigo;
                 primer_slot_libre_enemigo = actual;
             ELSE
-                // Dibujar la bala solo si el juego no est� pausado (convertir coordenadas de mapa a pantalla)
+                // Dibujar la bala solo si el juego no está pausado (convertir coordenadas de mapa a pantalla)
                 IF (juego_pausado == 0)
                     bala_enemigo[actual].draw_id = draw(TIPO_DIBUJO_CIRCULO_RELLENO, bala_enemigo[actual].color, OPACIDAD_DRAW, REGION_DRAW,
                         (bala_enemigo[actual].x - scroll.x0) - bala_enemigo[actual].tamano,
@@ -1354,9 +1299,9 @@ BEGIN
     END
 
     // Control de debug: presionar P para acabar el nivel (para pruebas)
-    /*IF (key(_p))
+    IF (_DEBUG_ == 1 && key(_p))
         enemigos_vivos = 0;
-    END*/
+    END
 END
 
 // Funcion: manejar_disparo_jugador (MODIFICADA)
@@ -1633,7 +1578,7 @@ BEGIN
                         procesos_enemigo[i] = proceso_enemigo_visual(i);
                     END
 
-                    // Solo mover y disparar si los controles estan activos y el juego no est� pausado
+                    // Solo mover y disparar si los controles estan activos y el juego no está pausado
                     IF (controles_activos == 1 AND juego_pausado == 0)
                         // Movemos en funcion del tipo
                         IF (enemigo[i].tipo == 1)
@@ -1711,9 +1656,9 @@ BEGIN
             graph = GRAFICO_ENEMIGO1;
             // Rotar segun direccion de movimiento
             IF (enemigo[index].dir == 1)
-                angle = ANGULO_ROTACION_ENEMIGO;  // Rotar 15� a la derecha
+                angle = ANGULO_ROTACION_ENEMIGO;  // Rotar 15° a la derecha
             ELSE
-                angle = ANGULO_ROTACION_ENEMIGO_OPUESTA;  // Rotar 15� a la izquierda
+                angle = ANGULO_ROTACION_ENEMIGO_OPUESTA;  // Rotar 15° a la izquierda
             END
             size = ESCALA_ENEMIGO;
         ELSE
@@ -1866,7 +1811,7 @@ BEGIN
 END
 
 // Funcion: mover_enemigo_tipo3
-// Descripcion: Maneja el movimiento vertical (de arriba a abajo) y horizontal (acerc�ndose al jugador) del enemigo tipo 3.
+// Descripcion: Maneja el movimiento vertical (de arriba a abajo) y horizontal (acercándose al jugador) del enemigo tipo 3.
 // Parametros:
 //   - x_offset: Puntero a la posicion x. -> Usamos el puntero para modificar la variable original.
 //   - y_offset: Puntero a la posicion y. -> Usamos el puntero para modificar la variable original.
@@ -1978,7 +1923,7 @@ BEGIN
     WHILE (contador > 0)
         delete_text(all_text);  // Limpiamos TODS los textos anteriores
         mostrar_textos_hud();   // Dibujamos los textos del HUD
-        write(FNT_PRESS, CENTRO_X, POS_Y_CUENTA_REGRESIVA_BASE, 1, "�ENHORABUENA!");       // Mensaje de felicitacion
+        write(FNT_PRESS, CENTRO_X, POS_Y_CUENTA_REGRESIVA_BASE, 1, "¡ENHORABUENA!");       // Mensaje de felicitacion
         write(FNT_NORMAL, CENTRO_X, POS_Y_CUENTA_REGRESIVA_BASE + ESPACIADO_LINEA_NORMAL, 1, "NIVEL COMPLETADO!");
         puntos_str = "Puntos: " + itoa(puntos);                     // Convertimos los puntos a string
         write(FNT_NORMAL, CENTRO_X, POS_Y_CUENTA_REGRESIVA_BASE + ESPACIADO_LINEA_NORMAL * 2, 1, puntos_str);             // Mostramos puntos
@@ -2023,6 +1968,78 @@ BEGIN
 END
 
 //------------------------------------------------------------------------------
+// FUNCION: cargar_y_reproducir_wav
+// DESCRIPCION: Carga un wav, muestra "CARGANDO", reproduce el sonido y borra el texto
+// PARAMETROS:
+//   - ruta: Ruta del archivo wav
+//   - loop_mode: Modo de loop (LOOP_SI o LOOP_NO)
+//------------------------------------------------------------------------------
+FUNCTION cargar_y_reproducir_wav(STRING ruta, INT loop_mode);
+PRIVATE
+    INT id_texto;
+BEGIN
+    IF (ruta == musica_actual) RETURN; END
+    detener_y_descargar_musica();
+    id_texto = write(0, 160, 100, 4, "CARGANDO");
+    FRAME;
+    WAV_MUSIC = load_wav(ruta, loop_mode);
+    WAV_CHANNEL = sound(WAV_MUSIC, VOL_MAX, FREQ_NORMAL);
+    musica_actual = ruta;
+    delete_text(id_texto);
+END
+
+//------------------------------------------------------------------------------
+// FUNCION: detener_y_descargar_musica
+// DESCRIPCION: Detiene el canal de sonido y descarga la música si están activos
+//------------------------------------------------------------------------------
+FUNCTION detener_y_descargar_musica();
+BEGIN
+    IF (WAV_CHANNEL != 0)
+        stop_sound(WAV_CHANNEL);
+    END
+    IF (WAV_MUSIC != 0)
+        unload_wav(WAV_MUSIC);
+    END
+    musica_actual = "";
+END
+
+//------------------------------------------------------------------------------
+// FUNCION: limpiar_recursos_y_reiniciar
+// DESCRIPCION: Descarga recursos del nivel (FPG, música) y reinicia variables globales del juego
+//------------------------------------------------------------------------------
+FUNCTION limpiar_recursos_y_reiniciar();
+BEGIN
+    // Descargar FPG del nivel
+    IF (FPG_LEVEL != 0)
+        unload_fpg(FPG_LEVEL);
+        FPG_LEVEL = 0;
+    END
+
+    // Reiniciar variables globales del juego
+    puntos = 0;
+    nivel = 1;
+    nivel_actual = NIVEL_INICIAL;
+    game_over = 0;
+    vidas_jugador = VIDAS_INICIALES;
+    jugador_inmune = 0;
+    juego_pausado = 0;
+    controles_activos = 0;
+    scroll_y_objetivo = 0;
+    contador_scroll = 0;
+    volver_menu = 0;
+
+    // Resetear flags de cinemáticas para nueva partida
+    saltar_cinematica = 0;
+
+    // Reiniciar listas enlazadas
+    primera_bala_jugador_activa = -1;
+    primer_slot_libre_jugador = 0;
+    primera_bala_enemigo_activa = -1;
+    primer_slot_libre_enemigo = 0;
+    primera_enemigo_activo = -1;
+END
+
+//------------------------------------------------------------------------------
 // PROCESS: mostrar_pagina_cinematica
 // DESCRIPCION: Muestra una pagina de texto en el area de dialogo de la cinematica
 //              Espera a que se pulse espacio para continuar
@@ -2031,11 +2048,11 @@ PROCESS mostrar_pagina_cinematica(INT cinematic_id, INT cg_actual, INT pagina_ac
 PRIVATE
     INT y_base;
     INT parpadeo = 0;               // Contador para el parpadeo
-    INT id_enter = 0;               // ID del process del gr�fico [ENTER]
+    INT id_enter = 0;               // ID del process del gráfico [ENTER]
     INT resultado_menu;             // Resultado del menu de pausa
     STRING linea1[50], linea2[50], linea3[50], linea4[50];
 BEGIN
-    // Obtener las l�neas de texto desde la nueva estructura paginas
+    // Obtener las líneas de texto desde la nueva estructura paginas
     linea1 = cinematics[cinematic_id].cgs[cg_actual].paginas[pagina_actual].linea1;
     linea2 = cinematics[cinematic_id].cgs[cg_actual].paginas[pagina_actual].linea2;
     linea3 = cinematics[cinematic_id].cgs[cg_actual].paginas[pagina_actual].linea3;
@@ -2043,7 +2060,7 @@ BEGIN
 
     y_base = CG_Y_TEXTO_BASE;
 
-    // Mostrar las l�neas de texto que no est�n vac�as
+    // Mostrar las líneas de texto que no estén vacías
     IF (linea1 != "")
         write(0, CENTRO_X, y_base, ALINEACION_CENTRADO, linea1);
         y_base = y_base + CG_ESPACIADO_LINEA;
@@ -2060,7 +2077,7 @@ BEGIN
         write(0, CENTRO_X, y_base, ALINEACION_CENTRADO, linea4);
     END
 
-    // Mostrar gr�fico parpadeante de [ENTER]
+    // Mostrar gráfico parpadeante de [ENTER]
     id_enter = enter_grafico(fpg_cg, CG_POS_X_ENTER, CG_POS_Y_ENTER);
 
     // Esperar a que se suelte espacio/enter
@@ -2072,7 +2089,7 @@ BEGIN
     LOOP
         // Verificar si se pulsa ESC para mostrar menu de pausa
         IF (key(_ESC))
-            // Borrar el gr�fico [ENTER] si existe
+            // Borrar el gráfico [ENTER] si existe
             IF (id_enter != 0)
                 signal(id_enter, s_kill);
                 id_enter = 0;
@@ -2097,7 +2114,7 @@ BEGIN
         FRAME;
     END
 
-    // Limpiar gr�fico y textos del area de dialogo
+    // Limpiar gráfico y textos del area de dialogo
     signal(id_enter, s_kill);
     delete_text(all_text);
     resultado_pagina_global = 0;
@@ -2134,13 +2151,8 @@ PRIVATE
 BEGIN
     delete_text(all_text);  // Limpiar textos previos
     delete_draw(all_drawing);  // Limpiar dibujos previos
-    // Detener m�sica
-    IF (WAV_CHANNEL != 0)
-       stop_sound(WAV_CHANNEL);
-    END
-    IF (WAV_MUSIC != 0)
-        unload_wav(WAV_MUSIC);
-    END
+    // Detener música
+    detener_y_descargar_musica();
 
     // Verificar si se debe saltar la cinematica
     IF (saltar_cinematica == 1)
@@ -2149,9 +2161,8 @@ BEGIN
     END
 
 
-    // Cargar m�sica de la cinem�tica (una vez por cinem�tica, no por CG)
-    WAV_MUSIC = load_wav(cinematics[cinematic_id].cgs[0].wav_ruta, LOOP_SI);
-    WAV_CHANNEL = sound(WAV_MUSIC, VOL_MAX, FREQ_NORMAL);
+    // Cargar música de la cinemática (una vez por cinemática, no por CG)
+    cargar_y_reproducir_wav(cinematics[cinematic_id].cgs[0].wav_ruta, LOOP_SI);
 
     // Bucle por cada CG
     FOR (cg_actual = 0; cg_actual < cinematics[cinematic_id].num_cg
@@ -2167,7 +2178,7 @@ BEGIN
         fade_from_black();
         id_marco = marco_dialogo(fpg_cg);
 
-        // Bucle por cada p�gina
+        // Bucle por cada página
         FOR (pagina_actual = 0; pagina_actual < cinematics[cinematic_id].cgs[cg_actual].num_paginas; pagina_actual++)
             resultado_pagina_global = -1;
             mostrar_pagina_cinematica(cinematic_id, cg_actual, pagina_actual, fpg_cg);
@@ -2184,36 +2195,26 @@ BEGIN
         unload_fpg(fpg_cg);
     END
 
-    // Si el usuario eligi� salir al DOS, no hacer transici�n ni cuenta atr�s
+    // Si el usuario eligió salir al DOS, no hacer transición ni cuenta atrás
     IF (salir_juego == 1)
         salir_juego = 0;
         exit(TEXTO_SALIDA, 0);
     END
-    // Si el usuario eligi� volver al men� principal, guardar puntuaci�n si corresponde y volver inmediatamente
+    // Si el usuario eligió volver al menú principal, guardar puntuación si corresponde y volver inmediatamente
     IF (volver_menu == 1)
         actualizar_top_scores(puntos);
         guardar_top_scores();
         RETURN(1);
     END
 
-    // Descargar musica de la cinematica antes de continuar al nivel
-    IF (WAV_CHANNEL != 0)
-        stop_sound(WAV_CHANNEL);
-        WAV_CHANNEL = 0;
-    END
-    IF (WAV_MUSIC != 0)
-        unload_wav(WAV_MUSIC);
-        WAV_MUSIC = 0;
-    END
-
-    // Preparar transicion al siguiente nivel solo si no se ha pedido volver al men� ni salir
+    // Preparar transicion al siguiente nivel solo si no se ha pedido volver al menú ni salir
     preparar_transicion_nivel(cinematics[cinematic_id].siguiente_nivel);
     RETURN(0);
 END
 
 //------------------------------------------------------------------------------
 // FUNCION: mostrar_creditos
-// DESCRIPCION: Muestra los cr�ditos del juego en la esquina superior izquierda
+// DESCRIPCION: Muestra los créditos del juego en la esquina superior izquierda
 //------------------------------------------------------------------------------
 FUNCTION mostrar_creditos();
 BEGIN
@@ -2223,7 +2224,7 @@ BEGIN
     write(FNT_COPY, 10, 3, ALINEACION_IZQUIERDA, "Le Hamster Ruso (2026)");
     write(FNT_COPY, 10, 13, ALINEACION_IZQUIERDA, "Desarrollado como tutorial");
     write(FNT_COPY, 10, 23, ALINEACION_IZQUIERDA, "educativo para el aprendizaje de");
-    write(FNT_COPY, 10, 33, ALINEACION_IZQUIERDA, "programaci�n en entorno MS-DOS.");
+    write(FNT_COPY, 10, 33, ALINEACION_IZQUIERDA, "programación en entorno MS-DOS.");
     write(FNT_COPY, 10, 43, ALINEACION_IZQUIERDA, "Inspirado en la obra");
     write(FNT_COPY, 10, 53, ALINEACION_IZQUIERDA, "'Yojo Senki' de Carlo Zen");
 END
@@ -2243,21 +2244,15 @@ BEGIN
     FPG_START = load_fpg(RUTA_FPG_START);
     load_pal(RUTA_FPG_START);
 
-    if (WAV_CHANNEL != 0)
-        stop_sound(WAV_CHANNEL);  // Detener cualquier sonido previo
-    END
-    if (WAV_MUSIC != 0)
-        unload_wav(WAV_MUSIC);    // Descargar cualquier musica previa
-    END
+    detener_y_descargar_musica();
 
-    // Cargar y reproducir m�sica de t�tulo en bucle
-    WAV_MUSIC = load_wav(RUTA_WAV_TITLE, LOOP_SI); // LOOP_SI = Reproducci�n en bucle
-    WAV_CHANNEL = sound(WAV_MUSIC, VOL_MAX, FREQ_NORMAL);
+    // Cargar y reproducir música de título en bucle
+    cargar_y_reproducir_wav(RUTA_WAV_TITLE, LOOP_SI);
 
     // Mostrar el grafico 1 del FPG (pantalla completa)
     put_screen(FPG_START, FONDO_SD);
 
-    // Mostrar cr�ditos en la esquina superior izquierda
+    // Mostrar créditos en la esquina superior izquierda
     mostrar_creditos();
 
     // Mostrar texto parpadeante
@@ -2322,7 +2317,7 @@ BEGIN
         FRAME;
     END
 
-    // Mostrar cr�ditos en la esquina superior izquierda
+    // Mostrar créditos en la esquina superior izquierda
     mostrar_creditos();
 
     // Mostrar el top 10 en la parte superior derecha
@@ -2494,8 +2489,9 @@ BEGIN
     delete_text(all_text);
     mostrar_textos_hud();   // Volmemos a dibujar los textos del HUD
 
-    // Cargar m�sica del nivel
+    // Cargar música del nivel
     SWITCH (nivel_actual)
+        CASE 0: ruta_musica = RUTA_WAV_CG001; END
         CASE 1: ruta_musica = RUTA_WAV_LEVEL02; END
         CASE 2: ruta_musica = RUTA_WAV_LEVEL03; END
         CASE 3: ruta_musica = RUTA_WAV_LEVEL04; END
@@ -2509,14 +2505,7 @@ BEGIN
     END
 
     IF (ruta_musica != "")
-        if (WAV_CHANNEL != 0)
-            stop_sound(WAV_CHANNEL);  // Detener cualquier sonido previo
-        END
-        if (WAV_MUSIC != 0)
-            unload_wav(WAV_MUSIC);    // Descargar cualquier musica previa
-        END
-        WAV_MUSIC = load_wav(ruta_musica, LOOP_SI);
-        WAV_CHANNEL = sound(WAV_MUSIC, VOL_MAX, FREQ_NORMAL);
+        cargar_y_reproducir_wav(ruta_musica, LOOP_SI);
     END
 
     // Inicializar el sistema de balas
@@ -2827,7 +2816,7 @@ BEGIN
                     // Activar flag para salir del bucle principal y volver al menu
                     volver_menu = 1;
                     juego_pausado = 0;
-                    RETURN; // El bucle principal gestionar� el men�
+                    RETURN; // El bucle principal gestionará el menú
                 ELSE
                     // Salir al DOS
                     actualizar_top_scores(puntos);
@@ -2866,7 +2855,7 @@ END
 //------------------------------------------------------------------------------
 // FUNCION: manejar_resultado_menu
 // DESCRIPCION: Maneja el resultado del menu de pausa en cinematicas
-//              Setea los flags apropiados seg�n la opci�n
+//              Setea los flags apropiados según la opción
 // PARAMETROS:
 //   - resultado: Resultado del menu (0=continuar, 1=saltar, 2=menu, 3=salir)
 //   - id_marco: ID del proceso del marco de dialogo
@@ -3051,12 +3040,12 @@ BEGIN
     cinematics[0].cgs[0].paginas[0].linea2 = "Academia Militar Imperial";
     cinematics[0].cgs[0].paginas[0].linea3 = "";
     cinematics[0].cgs[0].paginas[0].linea4 = "";
-    cinematics[0].cgs[0].paginas[1].linea1 = "Prueba final de graduaci�n";
+    cinematics[0].cgs[0].paginas[1].linea1 = "Prueba final de graduación";
     cinematics[0].cgs[0].paginas[1].linea2 = "";
     cinematics[0].cgs[0].paginas[1].linea3 = "";
     cinematics[0].cgs[0].paginas[1].linea4 = "";
-    cinematics[0].cgs[0].paginas[2].linea1 = "Tanya: La prueba de despliegue a�reo.";
-    cinematics[0].cgs[0].paginas[2].linea2 = "S�lo deber�a completarla...";
+    cinematics[0].cgs[0].paginas[2].linea1 = "Tanya: La prueba de despliegue aéreo.";
+    cinematics[0].cgs[0].paginas[2].linea2 = "Sólo debería completarla...";
     cinematics[0].cgs[0].paginas[2].linea3 = "para graduarme sin problemas.";
     cinematics[0].cgs[0].paginas[2].linea4 = "Me espera una vida feliz en la retaguardia.";
     // CG 1
@@ -3068,25 +3057,25 @@ BEGIN
     cinematics[0].cgs[1].paginas[0].linea2 = "Magos de la Alianza Entente Legadonia cruzando";
     cinematics[0].cgs[1].paginas[0].linea3 = "la frontera norte.";
     cinematics[0].cgs[1].paginas[0].linea4 = "";
-    cinematics[0].cgs[1].paginas[1].linea1 = "Tanya: �Qu� demonios?";
+    cinematics[0].cgs[1].paginas[1].linea1 = "Tanya: ¿Qué demonios?";
     cinematics[0].cgs[1].paginas[1].linea2 = "Esto no es parte de la prueba.";
     cinematics[0].cgs[1].paginas[1].linea3 = "";
     cinematics[0].cgs[1].paginas[1].linea4 = "";
-    cinematics[0].cgs[1].paginas[2].linea1 = "Operador: Cadete, mantenga posici�n.";
+    cinematics[0].cgs[1].paginas[2].linea1 = "Operador: Cadete, mantenga posición.";
     cinematics[0].cgs[1].paginas[2].linea2 = "Esto es una orden directa del Estado Mayor.";
     cinematics[0].cgs[1].paginas[2].linea3 = "";
     cinematics[0].cgs[1].paginas[2].linea4 = "";
-    cinematics[0].cgs[1].paginas[3].linea1 = "Tanya: �Del Estado Mayor?";
-    cinematics[0].cgs[1].paginas[3].linea2 = "Esto es rid�culo...";
-    cinematics[0].cgs[1].paginas[3].linea3 = "Si soy s�lo una cadete.";
-    cinematics[0].cgs[1].paginas[3].linea4 = "Solicito que reconsideren la petici�n.";
-    cinematics[0].cgs[1].paginas[4].linea1 = "Operador: Petici�n denegada.";
+    cinematics[0].cgs[1].paginas[3].linea1 = "Tanya: ¿Del Estado Mayor?";
+    cinematics[0].cgs[1].paginas[3].linea2 = "Esto es ridículo...";
+    cinematics[0].cgs[1].paginas[3].linea3 = "Si soy sólo una cadete.";
+    cinematics[0].cgs[1].paginas[3].linea4 = "Solicito que reconsideren la petición.";
+    cinematics[0].cgs[1].paginas[4].linea1 = "Operador: Petición denegada.";
     cinematics[0].cgs[1].paginas[4].linea2 = "Neutralice la amenaza y regrese a base.";
     cinematics[0].cgs[1].paginas[4].linea3 = "";
     cinematics[0].cgs[1].paginas[4].linea4 = "";
     cinematics[0].cgs[1].paginas[5].linea1 = "Tanya: Entendido...";
     cinematics[0].cgs[1].paginas[5].linea2 = "Pero que conste que esto";
-    cinematics[0].cgs[1].paginas[5].linea3 = "arruina mi graduaci�n perfecta.";
+    cinematics[0].cgs[1].paginas[5].linea3 = "arruina mi graduación perfecta.";
     cinematics[0].cgs[1].paginas[5].linea4 = "";
 
     // Cinematica 1: nivel_1_final
@@ -3099,44 +3088,44 @@ BEGIN
     cinematics[1].cgs[0].wav_ruta = RUTA_WAV_CG002;
     cinematics[1].cgs[0].num_paginas = 4;
     cinematics[1].cgs[0].paginas[0].linea1 = "Superior: Cadete Tanya.";
-    cinematics[1].cgs[0].paginas[0].linea2 = "Por m�ritos extraordinarios en combate real";
-    cinematics[1].cgs[0].paginas[0].linea3 = "y demostraci�n de capacidad excepcional...";
+    cinematics[1].cgs[0].paginas[0].linea2 = "Por méritos extraordinarios en combate real";
+    cinematics[1].cgs[0].paginas[0].linea3 = "y demostración de capacidad excepcional...";
     cinematics[1].cgs[0].paginas[0].linea4 = "";
-    cinematics[1].cgs[0].paginas[1].linea1 = "Superior: Se le concede el t�tulo de";
+    cinematics[1].cgs[0].paginas[1].linea1 = "Superior: Se le concede el título de";
     cinematics[1].cgs[0].paginas[1].linea2 = "Alas de Plata de Asalto.";
-    cinematics[1].cgs[0].paginas[1].linea3 = "Adem�s es promocionada a teniente.";
+    cinematics[1].cgs[0].paginas[1].linea3 = "Además es promocionada a teniente.";
     cinematics[1].cgs[0].paginas[1].linea4 = "Felicitaciones, teniente.";
-    cinematics[1].cgs[0].paginas[2].linea1 = "Tanya: �Teniente? �Ya?";
-    cinematics[1].cgs[0].paginas[2].linea2 = "Esto complicar� mi plan de vivir en retaguardia.";
+    cinematics[1].cgs[0].paginas[2].linea1 = "Tanya: ¿Teniente? ¿Ya?";
+    cinematics[1].cgs[0].paginas[2].linea2 = "Esto complicará mi plan de vivir en retaguardia.";
     cinematics[1].cgs[0].paginas[2].linea3 = "Pero bueno, acepto el ascenso.";
     cinematics[1].cgs[0].paginas[2].linea4 = "";
     cinematics[1].cgs[0].paginas[3].linea1 = "Tanya: Las Alas de Plata...";
     cinematics[1].cgs[0].paginas[3].linea2 = "Suena impresionante.";
-    cinematics[1].cgs[0].paginas[3].linea3 = "Ahora tendr� que lidiar con";
-    cinematics[1].cgs[0].paginas[3].linea4 = "m�s burocracia y propaganda.";
+    cinematics[1].cgs[0].paginas[3].linea3 = "Ahora tendré que lidiar con";
+    cinematics[1].cgs[0].paginas[3].linea4 = "más burocracia y propaganda.";
     // CG 1
     cinematics[1].cgs[1].fpg_ruta = RUTA_FPG_CG004;
     cinematics[1].cgs[1].pal_ruta = RUTA_FPG_CG004;
     cinematics[1].cgs[1].wav_ruta = RUTA_WAV_CG002;
     cinematics[1].cgs[1].num_paginas = 5;
-    cinematics[1].cgs[1].paginas[0].linea1 = "Sin quererlo me volv� famosa y";
+    cinematics[1].cgs[1].paginas[0].linea1 = "Sin quererlo me volví famosa y";
     cinematics[1].cgs[1].paginas[0].linea2 = "me obligaron a grabar cortos";
     cinematics[1].cgs[1].paginas[0].linea3 = "para animar a las tropas.";
     cinematics[1].cgs[1].paginas[0].linea4 = "";
-    cinematics[1].cgs[1].paginas[1].linea1 = "Operador: Sonr�a, por favor.";
+    cinematics[1].cgs[1].paginas[1].linea1 = "Operador: Sonría, por favor.";
     cinematics[1].cgs[1].paginas[1].linea2 = "";
     cinematics[1].cgs[1].paginas[1].linea3 = "";
     cinematics[1].cgs[1].paginas[1].linea4 = "";
-    cinematics[1].cgs[1].paginas[2].linea1 = "Con todo respeto, se�or.";
+    cinematics[1].cgs[1].paginas[2].linea1 = "Con todo respeto, señor.";
     cinematics[1].cgs[1].paginas[2].linea2 = "Prefiero que me disparen.";
     cinematics[1].cgs[1].paginas[2].linea3 = "";
     cinematics[1].cgs[1].paginas[2].linea4 = "";
-    cinematics[1].cgs[1].paginas[3].linea1 = "Operador: 3, 2, 1... �Grabando!";
+    cinematics[1].cgs[1].paginas[3].linea1 = "Operador: 3, 2, 1... ¡Grabando!";
     cinematics[1].cgs[1].paginas[3].linea2 = "";
     cinematics[1].cgs[1].paginas[3].linea3 = "";
     cinematics[1].cgs[1].paginas[3].linea4 = "";
     cinematics[1].cgs[1].paginas[4].linea1 = "Tanya: Soy Tanya";
-    cinematics[1].cgs[1].paginas[4].linea2 = "�Alas de Plata!";
+    cinematics[1].cgs[1].paginas[4].linea2 = "¡Alas de Plata!";
     cinematics[1].cgs[1].paginas[4].linea3 = "";
     cinematics[1].cgs[1].paginas[4].linea4 = "";
     // CG 2
@@ -3153,16 +3142,16 @@ BEGIN
     cinematics[1].cgs[2].paginas[1].linea3 = "que me protegen en combate.";
     cinematics[1].cgs[2].paginas[1].linea4 = "";
     cinematics[1].cgs[2].paginas[2].linea1 = "El frente del Rin es conocido";
-    cinematics[1].cgs[2].paginas[2].linea2 = "por ser uno de los m�s sangrientos";
+    cinematics[1].cgs[2].paginas[2].linea2 = "por ser uno de los más sangrientos";
     cinematics[1].cgs[2].paginas[2].linea3 = "de toda la guerra.";
     cinematics[1].cgs[2].paginas[2].linea4 = "";
-    cinematics[1].cgs[2].paginas[3].linea1 = "Tanya: Esto es rid�culo.";
-    cinematics[1].cgs[2].paginas[3].linea2 = "�Por qu� me mandan aqu�?";
-    cinematics[1].cgs[2].paginas[3].linea3 = "Quer�a evitar el peligro real.";
+    cinematics[1].cgs[2].paginas[3].linea1 = "Tanya: Esto es ridículo.";
+    cinematics[1].cgs[2].paginas[3].linea2 = "¿Por qué me mandan aquí?";
+    cinematics[1].cgs[2].paginas[3].linea3 = "Quería evitar el peligro real.";
     cinematics[1].cgs[2].paginas[3].linea4 = "";
     cinematics[1].cgs[2].paginas[4].linea1 = "Tanya: Con mi magia y estrategia,";
-    cinematics[1].cgs[2].paginas[4].linea2 = "podr�a ser m�s �til en retaguardia.";
-    cinematics[1].cgs[2].paginas[4].linea3 = "Pero �rdenes son �rdenes...";
+    cinematics[1].cgs[2].paginas[4].linea2 = "podría ser más útil en retaguardia.";
+    cinematics[1].cgs[2].paginas[4].linea3 = "Pero órdenes son órdenes...";
     cinematics[1].cgs[2].paginas[4].linea4 = "";
 
     // Cinematica 2: nivel_2_final
@@ -3176,16 +3165,16 @@ BEGIN
     cinematics[2].cgs[0].num_paginas = 3;
     cinematics[2].cgs[0].paginas[0].linea1 = "Durante los seis meses que Tanya";
     cinematics[2].cgs[0].paginas[0].linea2 = "estuvo en el frente,";
-    cinematics[2].cgs[0].paginas[0].linea3 = "se gan� el sobrenombre de";
+    cinematics[2].cgs[0].paginas[0].linea3 = "se ganó el sobrenombre de";
     cinematics[2].cgs[0].paginas[0].linea4 = "'Demonio del Rin' entre sus enemigos.";
     cinematics[2].cgs[0].paginas[1].linea1 = "Entre muertes y heridos,";
-    cinematics[2].cgs[0].paginas[1].linea2 = "logr� derribar a 92 magos enemigos.";
-    cinematics[2].cgs[0].paginas[1].linea3 = "Todo un r�cord digno de elogio.";
+    cinematics[2].cgs[0].paginas[1].linea2 = "logró derribar a 92 magos enemigos.";
+    cinematics[2].cgs[0].paginas[1].linea3 = "Todo un récord digno de elogio.";
     cinematics[2].cgs[0].paginas[1].linea4 = "";
-    cinematics[2].cgs[0].paginas[2].linea1 = "Tanya: Mi reputaci�n crece,";
-    cinematics[2].cgs[0].paginas[2].linea2 = "pero el peligro tambi�n.";
+    cinematics[2].cgs[0].paginas[2].linea1 = "Tanya: Mi reputación crece,";
+    cinematics[2].cgs[0].paginas[2].linea2 = "pero el peligro también.";
     cinematics[2].cgs[0].paginas[2].linea3 = "Esto no era parte del plan.";
-    cinematics[2].cgs[0].paginas[2].linea4 = "�Quiero vivir tranquila en retaguardia!";
+    cinematics[2].cgs[0].paginas[2].linea4 = "¡Quiero vivir tranquila en retaguardia!";
     // CG 1
     cinematics[2].cgs[1].fpg_ruta = RUTA_FPG_CG007;
     cinematics[2].cgs[1].pal_ruta = RUTA_FPG_CG007;
@@ -3195,26 +3184,26 @@ BEGIN
     cinematics[2].cgs[1].paginas[0].linea2 = "Tanya recibe un ascenso";
     cinematics[2].cgs[1].paginas[0].linea3 = "y es enviada a la Academia de Guerra";
     cinematics[2].cgs[1].paginas[0].linea4 = "para estudios avanzados.";
-    cinematics[2].cgs[1].paginas[1].linea1 = "Pasado medio a�o se grad�a";
+    cinematics[2].cgs[1].paginas[1].linea1 = "Pasado medio año se gradúa";
     cinematics[2].cgs[1].paginas[1].linea2 = "y recibe uno de los mayores honores:";
     cinematics[2].cgs[1].paginas[1].linea3 = "Es nombrada como una de";
     cinematics[2].cgs[1].paginas[1].linea4 = "los Doce Caballeros.";
-    cinematics[2].cgs[1].paginas[2].linea1 = "Se le propone crear el Batall�n 203";
+    cinematics[2].cgs[1].paginas[2].linea1 = "Se le propone crear el Batallón 203";
     cinematics[2].cgs[1].paginas[2].linea2 = "de Magos de Guerra,";
     cinematics[2].cgs[1].paginas[2].linea3 = "compuesto por magos";
     cinematics[2].cgs[1].paginas[2].linea4 = "seleccionados por ella misma.";
-    cinematics[2].cgs[1].paginas[3].linea1 = "Su primera misi�n: Parar la invasi�n";
+    cinematics[2].cgs[1].paginas[3].linea1 = "Su primera misión: Parar la invasión";
     cinematics[2].cgs[1].paginas[3].linea2 = "del Ducado de Dacia en el frente este.";
-    cinematics[2].cgs[1].paginas[3].linea3 = "Una peque�a naci�n";
+    cinematics[2].cgs[1].paginas[3].linea3 = "Una pequeña nación";
     cinematics[2].cgs[1].paginas[3].linea4 = "que ha decidido invadir al imperio.";
-    cinematics[2].cgs[1].paginas[4].linea1 = "El batall�n 203 consigue repeler";
-    cinematics[2].cgs[1].paginas[4].linea2 = "la invasi�n en apenas unas horas";
+    cinematics[2].cgs[1].paginas[4].linea1 = "El batallón 203 consigue repeler";
+    cinematics[2].cgs[1].paginas[4].linea2 = "la invasión en apenas unas horas";
     cinematics[2].cgs[1].paginas[4].linea3 = "y sin bajas,";
     cinematics[2].cgs[1].paginas[4].linea4 = "demostrando su efectividad.";
     cinematics[2].cgs[1].paginas[5].linea1 = "Tanya: Hay que arrancar";
-    cinematics[2].cgs[1].paginas[5].linea2 = "el problema de ra�z.";
+    cinematics[2].cgs[1].paginas[5].linea2 = "el problema de raíz.";
     cinematics[2].cgs[1].paginas[5].linea3 = "Vayamos a la capital de Dacia,";
-    cinematics[2].cgs[1].paginas[5].linea4 = "a ver qu� est�n tramando.";
+    cinematics[2].cgs[1].paginas[5].linea4 = "a ver qué están tramando.";
 
     // Cinematica 3: nivel_3_final
     cinematics[3].num_cg = 4;
@@ -3225,32 +3214,32 @@ BEGIN
     cinematics[3].cgs[0].pal_ruta = RUTA_FPG_CG008;
     cinematics[3].cgs[0].wav_ruta = RUTA_WAV_CG004;
     cinematics[3].cgs[0].num_paginas = 3;
-    cinematics[3].cgs[0].paginas[0].linea1 = "El Batall�n 203 de Tanya llega";
+    cinematics[3].cgs[0].paginas[0].linea1 = "El Batallón 203 de Tanya llega";
     cinematics[3].cgs[0].paginas[0].linea2 = "a la capital de Dacia sin problemas.";
-    cinematics[3].cgs[0].paginas[0].linea3 = "El ej�rcito enemigo no est�";
+    cinematics[3].cgs[0].paginas[0].linea3 = "El ejército enemigo no está";
     cinematics[3].cgs[0].paginas[0].linea4 = "a la altura.";
-    cinematics[3].cgs[0].paginas[1].linea1 = "All� descubren una f�brica de armamento";
+    cinematics[3].cgs[0].paginas[1].linea1 = "Allí descubren una fábrica de armamento";
     cinematics[3].cgs[0].paginas[1].linea2 = "financiada seguramente por potencias";
     cinematics[3].cgs[0].paginas[1].linea3 = "extranjeras.";
     cinematics[3].cgs[0].paginas[1].linea4 = "";
-    cinematics[3].cgs[0].paginas[2].linea1 = "Tanya: Esto explica la invasi�n.";
-    cinematics[3].cgs[0].paginas[2].linea2 = "Una amenaza oculta detr�s.";
-    cinematics[3].cgs[0].paginas[2].linea3 = "Alguien les est� ayudando";
+    cinematics[3].cgs[0].paginas[2].linea1 = "Tanya: Esto explica la invasión.";
+    cinematics[3].cgs[0].paginas[2].linea2 = "Una amenaza oculta detrás.";
+    cinematics[3].cgs[0].paginas[2].linea3 = "Alguien les está ayudando";
     cinematics[3].cgs[0].paginas[2].linea4 = "a fabricar armas.";
     // CG 1
     cinematics[3].cgs[1].fpg_ruta = RUTA_FPG_CG009;
     cinematics[3].cgs[1].pal_ruta = RUTA_FPG_CG009;
     cinematics[3].cgs[1].wav_ruta = RUTA_WAV_CG004;
     cinematics[3].cgs[1].num_paginas = 5;
-    cinematics[3].cgs[1].paginas[0].linea1 = "Tanya decide valerse de artima�as legales";
-    cinematics[3].cgs[1].paginas[0].linea2 = "para atacar la f�brica sin violar";
+    cinematics[3].cgs[1].paginas[0].linea1 = "Tanya decide valerse de artimañas legales";
+    cinematics[3].cgs[1].paginas[0].linea2 = "para atacar la fábrica sin violar";
     cinematics[3].cgs[1].paginas[0].linea3 = "el derecho internacional.";
     cinematics[3].cgs[1].paginas[0].linea4 = "";
     cinematics[3].cgs[1].paginas[1].linea1 = "Usando interpretaciones creativas";
     cinematics[3].cgs[1].paginas[1].linea2 = "de tratados y leyes de guerra,";
     cinematics[3].cgs[1].paginas[1].linea3 = "autoriza el ataque.";
     cinematics[3].cgs[1].paginas[1].linea4 = "";
-    cinematics[3].cgs[1].paginas[2].linea1 = "Tanya hace uso de su voz de ni�a";
+    cinematics[3].cgs[1].paginas[2].linea1 = "Tanya hace uso de su voz de niña";
     cinematics[3].cgs[1].paginas[2].linea2 = "para emitir una advertencia de ataque,";
     cinematics[3].cgs[1].paginas[2].linea3 = "pero el enemigo no se lo toma en serio.";
     cinematics[3].cgs[1].paginas[2].linea4 = "Piensa que se trata de una broma.";
@@ -3260,16 +3249,16 @@ BEGIN
     cinematics[3].cgs[1].paginas[3].linea4 = "";
     cinematics[3].cgs[1].paginas[4].linea1 = "Tanya: La ley es un arma poderosa";
     cinematics[3].cgs[1].paginas[4].linea2 = "cuando se sabe usar.";
-    cinematics[3].cgs[1].paginas[4].linea3 = "Ser� cuestionable,";
-    cinematics[3].cgs[1].paginas[4].linea4 = "pero evit� riesgos innecesarios.";
+    cinematics[3].cgs[1].paginas[4].linea3 = "Será cuestionable,";
+    cinematics[3].cgs[1].paginas[4].linea4 = "pero evité riesgos innecesarios.";
     // CG 2
     cinematics[3].cgs[2].fpg_ruta = RUTA_FPG_CG010;
     cinematics[3].cgs[2].pal_ruta = RUTA_FPG_CG010;
     cinematics[3].cgs[2].wav_ruta = RUTA_WAV_CG004;
     cinematics[3].cgs[2].num_paginas = 3;
-    cinematics[3].cgs[2].paginas[0].linea1 = "Tras el �xito de la misi�n en Dacia,";
+    cinematics[3].cgs[2].paginas[0].linea1 = "Tras el éxito de la misión en Dacia,";
     cinematics[3].cgs[2].paginas[0].linea2 = "Tanya es convocada por el alto mando";
-    cinematics[3].cgs[2].paginas[0].linea3 = "imperial para una reuni�n urgente.";
+    cinematics[3].cgs[2].paginas[0].linea3 = "imperial para una reunión urgente.";
     cinematics[3].cgs[2].paginas[0].linea4 = "";
     cinematics[3].cgs[2].paginas[1].linea1 = "Rudersdorf: Excelente trabajo en Dacia,";
     cinematics[3].cgs[2].paginas[1].linea2 = "teniente coronel Degurechaff.";
@@ -3284,26 +3273,26 @@ BEGIN
     cinematics[3].cgs[3].pal_ruta = RUTA_FPG_CG011;
     cinematics[3].cgs[3].wav_ruta = RUTA_WAV_CG004;
     cinematics[3].cgs[3].num_paginas = 5;
-    cinematics[3].cgs[3].paginas[0].linea1 = "La misi�n asignada al batall�n 203:";
+    cinematics[3].cgs[3].paginas[0].linea1 = "La misión asignada al batallón 203:";
     cinematics[3].cgs[3].paginas[0].linea2 = "Desplegarse en el frente norte";
     cinematics[3].cgs[3].paginas[0].linea3 = "para derribar las defensas costeras";
     cinematics[3].cgs[3].paginas[0].linea4 = "de Legadonia en la zona de Osfjord.";
-    cinematics[3].cgs[3].paginas[1].linea1 = "El objetivo: Neutralizar artiller�a costera,";
-    cinematics[3].cgs[3].paginas[1].linea2 = "posiciones antia�reas, defensas";
-    cinematics[3].cgs[3].paginas[1].linea3 = "y l�neas de suministro";
+    cinematics[3].cgs[3].paginas[1].linea1 = "El objetivo: Neutralizar artillería costera,";
+    cinematics[3].cgs[3].paginas[1].linea2 = "posiciones antiaéreas, defensas";
+    cinematics[3].cgs[3].paginas[1].linea3 = "y líneas de suministro";
     cinematics[3].cgs[3].paginas[1].linea4 = "para permitir un desembarco masivo por mar.";
     cinematics[3].cgs[3].paginas[2].linea1 = "Tanya: Un ataque sorpresa nocturno";
     cinematics[3].cgs[3].paginas[2].linea2 = "con magos voladores.";
     cinematics[3].cgs[3].paginas[2].linea3 = "Tenemos apenas media hora";
     cinematics[3].cgs[3].paginas[2].linea4 = "antes de que comience el desembarco.";
     cinematics[3].cgs[3].paginas[3].linea1 = "Tanya: Si fallamos, el desembarco";
-    cinematics[3].cgs[3].paginas[3].linea2 = "ser� un desastre y esto se convertir�";
-    cinematics[3].cgs[3].paginas[3].linea3 = "en uno de los mayores rid�culos";
+    cinematics[3].cgs[3].paginas[3].linea2 = "será un desastre y esto se convertirá";
+    cinematics[3].cgs[3].paginas[3].linea3 = "en uno de los mayores ridículos";
     cinematics[3].cgs[3].paginas[3].linea4 = "de la historia de la estrategia militar.";
-    cinematics[3].cgs[3].paginas[4].linea1 = "Tanya: Pero si tenemos �xito,";
+    cinematics[3].cgs[3].paginas[4].linea1 = "Tanya: Pero si tenemos éxito,";
     cinematics[3].cgs[3].paginas[4].linea2 = "romperemos el estancamiento";
     cinematics[3].cgs[3].paginas[4].linea3 = "y aceleraremos el fin de la guerra.";
-    cinematics[3].cgs[3].paginas[4].linea4 = "Por fin podr� volver a la retaguardia.";
+    cinematics[3].cgs[3].paginas[4].linea4 = "Por fin podré volver a la retaguardia.";
 
     // Cinematica 4: nivel_6_final
     cinematics[4].num_cg = 1;
@@ -3314,27 +3303,27 @@ BEGIN
     cinematics[4].cgs[0].pal_ruta = RUTA_FPG_CG012;
     cinematics[4].cgs[0].wav_ruta = RUTA_WAV_LEVEL7;
     cinematics[4].cgs[0].num_paginas = 6;
-    cinematics[4].cgs[0].paginas[0].linea1 = "Tras el �xito de la operaci�n";
+    cinematics[4].cgs[0].paginas[0].linea1 = "Tras el éxito de la operación";
     cinematics[4].cgs[0].paginas[0].linea2 = "en el frente norte contra Legadonia,";
-    cinematics[4].cgs[0].paginas[0].linea3 = "el batall�n 203 es reasignado";
-    cinematics[4].cgs[0].paginas[0].linea4 = "r�pidamente al frente oeste.";
+    cinematics[4].cgs[0].paginas[0].linea3 = "el batallón 203 es reasignado";
+    cinematics[4].cgs[0].paginas[0].linea4 = "rápidamente al frente oeste.";
     cinematics[4].cgs[0].paginas[1].linea1 = "El nuevo objetivo: La ciudad de Arene,";
     cinematics[4].cgs[0].paginas[1].linea2 = "recientemente capturada al antiguo";
-    cinematics[4].cgs[0].paginas[1].linea3 = "territorio de la Rep�blica Francois,";
-    cinematics[4].cgs[0].paginas[1].linea4 = "pero ahora en llamas por una rebeli�n.";
+    cinematics[4].cgs[0].paginas[1].linea3 = "territorio de la República Francois,";
+    cinematics[4].cgs[0].paginas[1].linea4 = "pero ahora en llamas por una rebelión.";
     cinematics[4].cgs[0].paginas[2].linea1 = "Milicianos locales y magos";
-    cinematics[4].cgs[0].paginas[2].linea2 = "de la Rep�blica Francois,";
+    cinematics[4].cgs[0].paginas[2].linea2 = "de la República Francois,";
     cinematics[4].cgs[0].paginas[2].linea3 = "liderados por el Lt. Col. Severin Bientot,";
     cinematics[4].cgs[0].paginas[2].linea4 = "han iniciado una feroz resistencia.";
-    cinematics[4].cgs[0].paginas[3].linea1 = "Tanya: 'Ordenes del Estado Mayor.";
+    cinematics[4].cgs[0].paginas[3].linea1 = "Tanya: Órdenes del Estado Mayor.";
     cinematics[4].cgs[0].paginas[3].linea2 = "Reconquistar la ciudad y eliminar";
     cinematics[4].cgs[0].paginas[3].linea3 = "toda resistencia, incluso si implica";
     cinematics[4].cgs[0].paginas[3].linea4 = "bajas civiles masivas.";
-    cinematics[4].cgs[0].paginas[4].linea1 = "Tanya: Usando una interpretaci�n legal";
+    cinematics[4].cgs[0].paginas[4].linea1 = "Tanya: Usando una interpretación legal";
     cinematics[4].cgs[0].paginas[4].linea2 = "de mi tesis en la Academia Militar,";
-    cinematics[4].cgs[0].paginas[4].linea3 = "emitiremos una orden de evacuaci�n.";
-    cinematics[4].cgs[0].paginas[4].linea4 = "Cualquiera que permanezca ser� considerado hostil.";
-    cinematics[4].cgs[0].paginas[5].linea1 = "Tanya: Esto permitir� bombardear";
+    cinematics[4].cgs[0].paginas[4].linea3 = "emitiremos una orden de evacuación.";
+    cinematics[4].cgs[0].paginas[4].linea4 = "Cualquiera que permanezca será considerado hostil.";
+    cinematics[4].cgs[0].paginas[5].linea1 = "Tanya: Esto permitirá bombardear";
     cinematics[4].cgs[0].paginas[5].linea2 = "la ciudad sin restricciones.";
     cinematics[4].cgs[0].paginas[5].linea3 = "La guerra no perdona.";
     cinematics[4].cgs[0].paginas[5].linea4 = "";
@@ -3349,15 +3338,15 @@ BEGIN
     cinematics[5].cgs[0].wav_ruta = RUTA_WAV_CG004;
     cinematics[5].cgs[0].num_paginas = 2;
     cinematics[5].cgs[0].paginas[0].linea1 = "Tras la victoria en Arene,";
-    cinematics[5].cgs[0].paginas[0].linea2 = "Tanya cumple la misi�n sin piedad.";
+    cinematics[5].cgs[0].paginas[0].linea2 = "Tanya cumple la misión sin piedad.";
     cinematics[5].cgs[0].paginas[0].linea3 = "Sus disparos siegan muchas";
-    cinematics[5].cgs[0].paginas[0].linea4 = "vidas a sangre fr�a.";
-    cinematics[5].cgs[0].paginas[1].linea1 = "Tanya: Solo cumplo �rdenes.";
+    cinematics[5].cgs[0].paginas[0].linea4 = "vidas a sangre fría.";
+    cinematics[5].cgs[0].paginas[1].linea1 = "Tanya: Solo cumplo órdenes.";
     cinematics[5].cgs[0].paginas[1].linea2 = "La guerra no deja espacio";
     cinematics[5].cgs[0].paginas[1].linea3 = "para sentimentalismos.";
     cinematics[5].cgs[0].paginas[1].linea4 = "";
 
-    // CG 1 - Zettour dando �rdenes
+    // CG 1 - Zettour dando órdenes
     cinematics[5].cgs[1].fpg_ruta = RUTA_FPG_CG014;
     cinematics[5].cgs[1].pal_ruta = RUTA_FPG_CG014;
     cinematics[5].cgs[1].wav_ruta = RUTA_WAV_CG004;
@@ -3366,19 +3355,19 @@ BEGIN
     cinematics[5].cgs[1].paginas[0].linea2 = "teniente coronel Degurechaff.";
     cinematics[5].cgs[1].paginas[0].linea3 = "Pero el enemigo mantiene";
     cinematics[5].cgs[1].paginas[0].linea4 = "posiciones fuertes en retaguardia.";
-    cinematics[5].cgs[1].paginas[1].linea1 = "Zettour: Realice una incursi�n inmediata";
-    cinematics[5].cgs[1].paginas[1].linea2 = "para destruir sus generadores m�gicos";
-    cinematics[5].cgs[1].paginas[1].linea3 = "y l�neas de suministro.";
+    cinematics[5].cgs[1].paginas[1].linea1 = "Zettour: Realice una incursión inmediata";
+    cinematics[5].cgs[1].paginas[1].linea2 = "para destruir sus generadores mágicos";
+    cinematics[5].cgs[1].paginas[1].linea3 = "y líneas de suministro.";
     cinematics[5].cgs[1].paginas[1].linea4 = "";
-    cinematics[5].cgs[1].paginas[2].linea1 = "Zettour: Esto cortar� sus comunicaciones";
-    cinematics[5].cgs[1].paginas[2].linea2 = "y evitar� contraataques masivos.";
-    cinematics[5].cgs[1].paginas[2].linea3 = "Debilitaremos a Fran�ois";
+    cinematics[5].cgs[1].paginas[2].linea1 = "Zettour: Esto cortará sus comunicaciones";
+    cinematics[5].cgs[1].paginas[2].linea2 = "y evitará contraataques masivos.";
+    cinematics[5].cgs[1].paginas[2].linea3 = "Debilitaremos a François";
     cinematics[5].cgs[1].paginas[2].linea4 = "antes del asalto final a Parise.";
     cinematics[5].cgs[1].paginas[3].linea1 = "Tanya: Entendido, general Zettour.";
-    cinematics[5].cgs[1].paginas[3].linea2 = "Mis hombres incursionar�n,";
-    cinematics[5].cgs[1].paginas[3].linea3 = "sabotear�n y regresar�n";
+    cinematics[5].cgs[1].paginas[3].linea2 = "Mis hombres incursionarán,";
+    cinematics[5].cgs[1].paginas[3].linea3 = "sabotearán y regresarán";
     cinematics[5].cgs[1].paginas[3].linea4 = "victoriosos como siempre.";
-    cinematics[5].cgs[1].paginas[4].linea1 = "La incursi�n post-Arene";
+    cinematics[5].cgs[1].paginas[4].linea1 = "La incursión post-Arene";
     cinematics[5].cgs[1].paginas[4].linea2 = "prepara  el avance hacia";
     cinematics[5].cgs[1].paginas[4].linea3 = "la capital enemiga.";
     cinematics[5].cgs[1].paginas[4].linea4 = "";
@@ -3393,20 +3382,20 @@ BEGIN
     cinematics[6].cgs[0].wav_ruta = RUTA_WAV_CG004;
     cinematics[6].cgs[0].num_paginas = 4;
     cinematics[6].cgs[0].paginas[0].linea1 = "Con los suministros enemigos mermados por";
-    cinematics[6].cgs[0].paginas[0].linea2 = "la incursi�n en territorio de Fran�ois,";
+    cinematics[6].cgs[0].paginas[0].linea2 = "la incursión en territorio de François,";
     cinematics[6].cgs[0].paginas[0].linea3 = "el Alto Mando Imperial decide";
     cinematics[6].cgs[0].paginas[0].linea4 = "concentrar todas las fuerzas.";
     cinematics[6].cgs[0].paginas[1].linea1 = "El objetivo: el frente del Rin,";
-    cinematics[6].cgs[0].paginas[1].linea2 = "el sector m�s sangriento";
+    cinematics[6].cgs[0].paginas[1].linea2 = "el sector más sangriento";
     cinematics[6].cgs[0].paginas[1].linea3 = "y peligroso de toda la guerra.";
     cinematics[6].cgs[0].paginas[1].linea4 = "";
     cinematics[6].cgs[0].paginas[2].linea1 = "Tanya: El frente del Rin...";
-    cinematics[6].cgs[0].paginas[2].linea2 = "All� donde la muerte acecha";
+    cinematics[6].cgs[0].paginas[2].linea2 = "Allí donde la muerte acecha";
     cinematics[6].cgs[0].paginas[2].linea3 = "en cada esquina del campo de batalla.";
     cinematics[6].cgs[0].paginas[2].linea4 = "Esto es una locura absoluta.";
-    cinematics[6].cgs[0].paginas[3].linea1 = "El batall�n 203 es trasladado";
-    cinematics[6].cgs[0].paginas[3].linea2 = "al coraz�n del conflicto.";
-    cinematics[6].cgs[0].paginas[3].linea3 = "All� donde naci� la leyenda";
+    cinematics[6].cgs[0].paginas[3].linea1 = "El batallón 203 es trasladado";
+    cinematics[6].cgs[0].paginas[3].linea2 = "al corazón del conflicto.";
+    cinematics[6].cgs[0].paginas[3].linea3 = "Allí donde nació la leyenda";
     cinematics[6].cgs[0].paginas[3].linea4 = "del 'Demonio del Rin'.";
 
     // Cinematica 7: post-nivel 9
@@ -3421,43 +3410,43 @@ BEGIN
     cinematics[7].cgs[0].paginas[0].linea1 = "Con el frente del Rin bajo control imperial,";
     cinematics[7].cgs[0].paginas[0].linea2 = "las fuerzas del Imperio han logrado";
     cinematics[7].cgs[0].paginas[0].linea3 = "una victoria decisiva";
-    cinematics[7].cgs[0].paginas[0].linea4 = "en el frente m�s sangriento.";
-    cinematics[7].cgs[0].paginas[1].linea1 = "El camino hacia la capital de Fran�ois";
+    cinematics[7].cgs[0].paginas[0].linea4 = "en el frente más sangriento.";
+    cinematics[7].cgs[0].paginas[1].linea1 = "El camino hacia la capital de François";
     cinematics[7].cgs[0].paginas[1].linea2 = "queda ahora despejado.";
     cinematics[7].cgs[0].paginas[1].linea3 = "Sin embargo, el Alto Mando";
     cinematics[7].cgs[0].paginas[1].linea4 = "planea una maniobra envolvente.";
     cinematics[7].cgs[0].paginas[2].linea1 = "Para tomar Parise no basta";
-    cinematics[7].cgs[0].paginas[2].linea2 = "con avanzar �nicamente por tierra";
+    cinematics[7].cgs[0].paginas[2].linea2 = "con avanzar únicamente por tierra";
     cinematics[7].cgs[0].paginas[2].linea3 = "desde el este.";
     cinematics[7].cgs[0].paginas[2].linea4 = "";
-    cinematics[7].cgs[0].paginas[3].linea1 = "Es necesario cortar las l�neas";
+    cinematics[7].cgs[0].paginas[3].linea1 = "Es necesario cortar las líneas";
     cinematics[7].cgs[0].paginas[3].linea2 = "de suministro enemigas";
-    cinematics[7].cgs[0].paginas[3].linea3 = "y atacar desde m�ltiples frentes.";
+    cinematics[7].cgs[0].paginas[3].linea3 = "y atacar desde múltiples frentes.";
     cinematics[7].cgs[0].paginas[3].linea4 = "";
 
-    // CG 1 - Tanya dirigi�ndose a Brest
+    // CG 1 - Tanya dirigiéndose a Brest
     cinematics[7].cgs[1].fpg_ruta = RUTA_FPG_CG017;
     cinematics[7].cgs[1].pal_ruta = RUTA_FPG_CG017;
     cinematics[7].cgs[1].wav_ruta = RUTA_WAV_CG004;
     cinematics[7].cgs[1].num_paginas = 5;
     cinematics[7].cgs[1].paginas[0].linea1 = "El objetivo: el puerto de Brest,";
-    cinematics[7].cgs[1].paginas[0].linea2 = "clave en la costa atl�ntica";
-    cinematics[7].cgs[1].paginas[0].linea3 = "de Fran�ois.";
+    cinematics[7].cgs[1].paginas[0].linea2 = "clave en la costa atlántica";
+    cinematics[7].cgs[1].paginas[0].linea3 = "de François.";
     cinematics[7].cgs[1].paginas[0].linea4 = "";
-    cinematics[7].cgs[1].paginas[1].linea1 = "Capturarlo permitir�";
+    cinematics[7].cgs[1].paginas[1].linea1 = "Capturarlo permitirá";
     cinematics[7].cgs[1].paginas[1].linea2 = "desembarcar tropas del imperio";
     cinematics[7].cgs[1].paginas[1].linea3 = "y suministros directamente";
     cinematics[7].cgs[1].paginas[1].linea4 = "en el oeste enemigo.";
-    cinematics[7].cgs[1].paginas[2].linea1 = "Adem�s, cortar� las rutas";
-    cinematics[7].cgs[1].paginas[2].linea2 = "mar�timas de refuerzos";
-    cinematics[7].cgs[1].paginas[2].linea3 = "desde el Atl�ntico,";
+    cinematics[7].cgs[1].paginas[2].linea1 = "Además, cortará las rutas";
+    cinematics[7].cgs[1].paginas[2].linea2 = "marítimas de refuerzos";
+    cinematics[7].cgs[1].paginas[2].linea3 = "desde el Atlántico,";
     cinematics[7].cgs[1].paginas[2].linea4 = "aislando de la Commonwealth.";
     cinematics[7].cgs[1].paginas[3].linea1 = "Esta amenaza desde el oeste";
-    cinematics[7].cgs[1].paginas[3].linea2 = "obligar� a Fran�ois";
+    cinematics[7].cgs[1].paginas[3].linea2 = "obligará a François";
     cinematics[7].cgs[1].paginas[3].linea3 = "a dividir sus fuerzas,";
     cinematics[7].cgs[1].paginas[3].linea4 = "debilitando la defensa de Parise.";
     cinematics[7].cgs[1].paginas[4].linea1 = "Tanya: Brest...";
-    cinematics[7].cgs[1].paginas[4].linea2 = "Otro puerto estrat�gico";
+    cinematics[7].cgs[1].paginas[4].linea2 = "Otro puerto estratégico";
     cinematics[7].cgs[1].paginas[4].linea3 = "en esta guerra interminable.";
     cinematics[7].cgs[1].paginas[4].linea4 = "La maniobra envolvente comienza.";
 
@@ -3465,22 +3454,22 @@ BEGIN
     cinematics[8].num_cg = 2;
     cinematics[8].siguiente_nivel = 12;
 
-    // CG 0 - Operaci�n Shock and Awe
+    // CG 0 - Operación Shock and Awe
     cinematics[8].cgs[0].fpg_ruta = RUTA_FPG_CG018;
     cinematics[8].cgs[0].pal_ruta = RUTA_FPG_CG018;
     cinematics[8].cgs[0].wav_ruta = RUTA_WAV_CG004;
     cinematics[8].cgs[0].num_paginas = 5;
     cinematics[8].cgs[0].paginas[0].linea1 = "Con el frente del Rin asegurado";
     cinematics[8].cgs[0].paginas[0].linea2 = "y Brest bajo control imperial,";
-    cinematics[8].cgs[0].paginas[0].linea3 = "el Alto Mando lanza la operaci�n";
-    cinematics[8].cgs[0].paginas[0].linea4 = "m�s audaz de la guerra.";
-    cinematics[8].cgs[0].paginas[1].linea1 = "La operaci�n 'Shock and Awe'";
+    cinematics[8].cgs[0].paginas[0].linea3 = "el Alto Mando lanza la operación";
+    cinematics[8].cgs[0].paginas[0].linea4 = "más audaz de la guerra.";
+    cinematics[8].cgs[0].paginas[1].linea1 = "La operación 'Shock and Awe'";
     cinematics[8].cgs[0].paginas[1].linea2 = "busca decapitar al enemigo";
-    cinematics[8].cgs[0].paginas[1].linea3 = "de forma r�pida y decisiva,";
-    cinematics[8].cgs[0].paginas[1].linea4 = "rompiendo su coordinaci�n.";
-    cinematics[8].cgs[0].paginas[2].linea1 = "El Batall�n 203 es lanzado";
+    cinematics[8].cgs[0].paginas[1].linea3 = "de forma rápida y decisiva,";
+    cinematics[8].cgs[0].paginas[1].linea4 = "rompiendo su coordinación.";
+    cinematics[8].cgs[0].paginas[2].linea1 = "El Batallón 203 es lanzado";
     cinematics[8].cgs[0].paginas[2].linea2 = "dentro de cohetes V-1 experimentales,";
-    cinematics[8].cgs[0].paginas[2].linea3 = "tecnolog�a m�gica de alta velocidad";
+    cinematics[8].cgs[0].paginas[2].linea3 = "tecnología mágica de alta velocidad";
     cinematics[8].cgs[0].paginas[2].linea4 = "e indetectable.";
     cinematics[8].cgs[0].paginas[3].linea1 = "Primera fase: 'Door Knocker'";
     cinematics[8].cgs[0].paginas[3].linea2 = "Ataque directo al cuartel general";
@@ -3488,7 +3477,7 @@ BEGIN
     cinematics[8].cgs[0].paginas[3].linea4 = "y atraer fuerzas a una emboscada.";
     cinematics[8].cgs[0].paginas[4].linea1 = "Segunda fase: 'Lockpick'";
     cinematics[8].cgs[0].paginas[4].linea2 = "Sabotaje y bombardeos para romper";
-    cinematics[8].cgs[0].paginas[4].linea3 = "l�neas defensivas y flancos.";
+    cinematics[8].cgs[0].paginas[4].linea3 = "líneas defensivas y flancos.";
     cinematics[8].cgs[0].paginas[4].linea4 = "";
 
     // CG 1 - Tanya reflexionando
@@ -3496,7 +3485,7 @@ BEGIN
     cinematics[8].cgs[1].pal_ruta = RUTA_FPG_CG019;
     cinematics[8].cgs[1].wav_ruta = RUTA_WAV_CG004;
     cinematics[8].cgs[1].num_paginas = 1;
-    cinematics[8].cgs[1].paginas[0].linea1 = "Tanya: Esta operaci�n es un suicidio";
+    cinematics[8].cgs[1].paginas[0].linea1 = "Tanya: Esta operación es un suicidio";
     cinematics[8].cgs[1].paginas[0].linea2 = "calculado. El riesgo es inmenso,";
     cinematics[8].cgs[1].paginas[0].linea3 = "pero el Imperio necesita";
     cinematics[8].cgs[1].paginas[0].linea4 = "terminar esta guerra ahora.";
@@ -3512,20 +3501,20 @@ BEGIN
     cinematics[9].cgs[0].num_paginas = 4;
     cinematics[9].cgs[0].paginas[0].linea1 = "Con el cuartel general enemigo";
     cinematics[9].cgs[0].paginas[0].linea2 = "del frente abatido, las fuerzas";
-    cinematics[9].cgs[0].paginas[0].linea3 = "imperiales avanzan sin oposici�n";
-    cinematics[9].cgs[0].paginas[0].linea4 = "hacia el coraz�n del enemigo.";
+    cinematics[9].cgs[0].paginas[0].linea3 = "imperiales avanzan sin oposición";
+    cinematics[9].cgs[0].paginas[0].linea4 = "hacia el corazón del enemigo.";
     cinematics[9].cgs[0].paginas[1].linea1 = "El objetivo final: Parise,";
-    cinematics[9].cgs[0].paginas[1].linea2 = "la capital de Fran�ois.";
-    cinematics[9].cgs[0].paginas[1].linea3 = "La batalla decisiva que pondr�";
+    cinematics[9].cgs[0].paginas[1].linea2 = "la capital de François.";
+    cinematics[9].cgs[0].paginas[1].linea3 = "La batalla decisiva que pondrá";
     cinematics[9].cgs[0].paginas[1].linea4 = "fin a esta interminable guerra.";
-    cinematics[9].cgs[0].paginas[2].linea1 = "El Batall�n 203, endurecido";
-    cinematics[9].cgs[0].paginas[2].linea2 = "por a�os de combate, lidera";
+    cinematics[9].cgs[0].paginas[2].linea1 = "El Batallón 203, endurecido";
+    cinematics[9].cgs[0].paginas[2].linea2 = "por años de combate, lidera";
     cinematics[9].cgs[0].paginas[2].linea3 = "el asalto final.";
-    cinematics[9].cgs[0].paginas[2].linea4 = "La victoria est� al alcance.";
-    cinematics[9].cgs[0].paginas[3].linea1 = "Tanya: Despu�s de tanto tiempo,";
+    cinematics[9].cgs[0].paginas[2].linea4 = "La victoria está al alcance.";
+    cinematics[9].cgs[0].paginas[3].linea1 = "Tanya: Después de tanto tiempo,";
     cinematics[9].cgs[0].paginas[3].linea2 = "finalmente podremos volver";
     cinematics[9].cgs[0].paginas[3].linea3 = "a una vida normal.";
-    cinematics[9].cgs[0].paginas[3].linea4 = "Esta guerra termina aqu�.";
+    cinematics[9].cgs[0].paginas[3].linea4 = "Esta guerra termina aquí.";
 
     // Cinematica 10: fin del juego
     cinematics[10].num_cg = 1;
@@ -3536,14 +3525,14 @@ BEGIN
     cinematics[10].cgs[0].pal_ruta = RUTA_FPG_CG021;
     cinematics[10].cgs[0].wav_ruta = RUTA_WAV_ENDING;
     cinematics[10].cgs[0].num_paginas = 8;
-    cinematics[10].cgs[0].paginas[0].linea1 = "Parise ha ca�do.";
+    cinematics[10].cgs[0].paginas[0].linea1 = "Parise ha caído.";
     cinematics[10].cgs[0].paginas[0].linea2 = "Las fuerzas imperiales desfilan";
     cinematics[10].cgs[0].paginas[0].linea3 = "por las calles de la capital";
     cinematics[10].cgs[0].paginas[0].linea4 = "enemiga en triunfo absoluto.";
-    cinematics[10].cgs[0].paginas[1].linea1 = "Las tropas de Fran�ois,";
+    cinematics[10].cgs[0].paginas[1].linea1 = "Las tropas de François,";
     cinematics[10].cgs[0].paginas[1].linea2 = "derrotadas pero no aniquiladas,";
     cinematics[10].cgs[0].paginas[1].linea3 = "se exilian al otro lado";
-    cinematics[10].cgs[0].paginas[1].linea4 = "del Mediterr�neo.";
+    cinematics[10].cgs[0].paginas[1].linea4 = "del Mediterráneo.";
     cinematics[10].cgs[0].paginas[2].linea1 = "Se firma un armisticio";
     cinematics[10].cgs[0].paginas[2].linea2 = "que pone fin temporal";
     cinematics[10].cgs[0].paginas[2].linea3 = "a las hostilidades.";
@@ -3552,8 +3541,8 @@ BEGIN
     cinematics[10].cgs[0].paginas[3].linea2 = "por las calles conquistadas";
     cinematics[10].cgs[0].paginas[3].linea3 = "de Parise, reflexionando";
     cinematics[10].cgs[0].paginas[3].linea4 = "sobre el precio de la victoria.";
-    cinematics[10].cgs[0].paginas[4].linea1 = "Tanya: Esta paz es fr�gil.";
-    cinematics[10].cgs[0].paginas[4].linea2 = "Los exiliados regresar�n,";
+    cinematics[10].cgs[0].paginas[4].linea1 = "Tanya: Esta paz es frágil.";
+    cinematics[10].cgs[0].paginas[4].linea2 = "Los exiliados regresarán,";
     cinematics[10].cgs[0].paginas[4].linea3 = "y con ellos, nuevas guerras.";
     cinematics[10].cgs[0].paginas[4].linea4 = "El ciclo nunca termina.";
     cinematics[10].cgs[0].paginas[5].linea1 = "Pero por ahora, el Imperio";
@@ -3566,8 +3555,8 @@ BEGIN
     cinematics[10].cgs[0].paginas[6].linea4 = "Basado en la obra de Carlo Zen.";
     cinematics[10].cgs[0].paginas[7].linea1 = "Le Hamster ruso, 2026.";
     cinematics[10].cgs[0].paginas[7].linea2 = "Proyecto creado como tutorial";
-    cinematics[10].cgs[0].paginas[7].linea3 = "para ense�ar a programar";
-    cinematics[10].cgs[0].paginas[7].linea4 = "en MS-DOS. Sin �nimo de lucro";
+    cinematics[10].cgs[0].paginas[7].linea3 = "para enseñar a programar";
+    cinematics[10].cgs[0].paginas[7].linea4 = "en MS-DOS. Sin ánimo de lucro";
 END
 
 
@@ -3593,7 +3582,7 @@ BEGIN
     FNT_X = load_fnt(RUTA_FNT_X);
 
     // Cargar sonidos
-    WAV_DISPARO = load_wav(RUTA_WAV_DISPARO, LOOP_NO); // LOOP_NO = Reproducci�n normal
+    WAV_DISPARO = load_wav(RUTA_WAV_DISPARO, LOOP_NO); // LOOP_NO = Reproducción normal
 END
 
 //------------------------------------------------------------------------------
