@@ -6,9 +6,9 @@
 echo "Generando versión MSDOS..."
 
 # Copiar el archivo
-cp TINYHELL.PRG VSHOOTM2.PRG
+cp PRG/TINYHELL.PRG PRG/VSHOOTM2.PRG
 
 # Convertir a CP437
-iconv -f utf-8 -t cp437 -c VSHOOTM2.PRG > temp && mv temp VSHOOTM2.PRG
+iconv -f utf-8 -t cp437 -c PRG/VSHOOTM2.PRG > temp && mv temp PRG/VSHOOTM2.PRG
 
 echo "Versión MSDOS generada: VSHOOTM2.PRG"
