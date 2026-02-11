@@ -1152,8 +1152,16 @@ BEGIN
         enemigo[i].tipo = tipo_enemigo;
 
         // Para tipo 3, asignar grafico aleatorio (1 o 2)
+        // Para tipo 1 y 2, inicializar con valor por defecto para evitar basura de memoria
         IF (tipo_enemigo == 3)
-            enemigo[i].grafico_tipo3 = rand(GRAFICO_ENEMIGO1, GRAFICO_ENEMIGO2);
+            // Asignar aleatoriamente GRAFICO_ENEMIGO1 (2) o GRAFICO_ENEMIGO2 (3)
+            IF (rand(0, 1) == 0)
+                enemigo[i].grafico_tipo3 = GRAFICO_ENEMIGO1;
+            ELSE
+                enemigo[i].grafico_tipo3 = GRAFICO_ENEMIGO2;
+            END
+        ELSE
+            enemigo[i].grafico_tipo3 = GRAFICO_ENEMIGO2;  // Valor por defecto válido
         END
 
         // Marcar como activo
@@ -1583,11 +1591,6 @@ BEGIN
 
                 // Solo procesar si esta visible
                 IF (enemigo_visible == 1)
-                    // Crear proceso hijo si no existe
-                    IF (procesos_enemigo[i] == 0)
-                        procesos_enemigo[i] = proceso_enemigo_visual(i);
-                    END
-
                     // Solo mover y disparar si los controles estan activos y el juego no está pausado
                     IF (controles_activos == 1 AND juego_pausado == 0)
                         // Movemos en funcion del tipo
@@ -1619,6 +1622,17 @@ BEGIN
                                 disparar_enemigo_tipo2(&tiempo_disparo[i], enemigo[i].x, enemigo[i].y);
                             END
                         END
+                    END
+
+                    // Recalcular visibilidad después del movimiento
+                    enemigo_visible = 0;
+                    IF (enemigo[i].y >= scroll.y0 - MARGEN_VISIBLE_ARRIBA AND enemigo[i].y <= scroll.y0 + ALTO_PANTALLA + MARGEN_VISIBLE_ABAJO AND enemigo[i].activo == 1)
+                        enemigo_visible = 1;
+                    END
+
+                    // Crear proceso hijo si no existe y sigue siendo visible
+                    IF (procesos_enemigo[i] == 0 AND enemigo_visible == 1)
+                        procesos_enemigo[i] = proceso_enemigo_visual(i);
                     END
                 ELSE
                     // Enemigo no visible, eliminar proceso hijo si existe
@@ -1677,16 +1691,23 @@ BEGIN
                 angle = 0;
                 size = 100;
             ELSE
-                // Tipo 3: usar grafico aleatorio asignado
-                graph = enemigo[index].grafico_tipo3;
-                angle = 0;
-                size = ESCALA_ENEMIGO;
+                IF (enemigo[index].tipo == 3)
+                    // Tipo 3: usar grafico aleatorio asignado
+                    graph = enemigo[index].grafico_tipo3;
+                    angle = 0;
+                    size = ESCALA_ENEMIGO;
+                ELSE
+                    // Tipo desconocido, usar grafico por defecto
+                    graph = GRAFICO_ENEMIGO2;
+                    angle = 0;
+                    size = ESCALA_ENEMIGO;
+                END
             END
         END
 
-        // Asegurar que graph sea valido
-        IF (graph != GRAFICO_ENEMIGO1 AND graph != GRAFICO_ENEMIGO2)
-            graph = GRAFICO_ENEMIGO2;
+        // Asegurar que graph sea valido (nunca 0)
+        IF (graph == 0)
+            graph = GRAFICO_ENEMIGO2;  // Fallback seguro
         END
 
         FRAME;
@@ -2089,6 +2110,8 @@ END
 // DESCRIPCION: Descarga recursos del nivel (FPG, música) y reinicia variables globales del juego
 //------------------------------------------------------------------------------
 FUNCTION limpiar_recursos_y_reiniciar();
+PRIVATE
+    INT i;  // Variable para bucle de limpieza
 BEGIN
     // Descargar FPG del nivel
     descargar_fpg(&FPG_LEVEL);
@@ -2120,6 +2143,14 @@ BEGIN
     primera_bala_enemigo_activa = -1;
     primer_slot_libre_enemigo = 0;
     primera_enemigo_activo = -1;
+
+    // Limpiar array de enemigos para evitar datos antiguos
+    FOR (i=0; i<NUM_ENEMIGOS_MAXIMOS; i++)
+        enemigo[i].activo = 0;
+        enemigo[i].tipo = 0;
+        enemigo[i].grafico_tipo3 = 0;
+        enemigo[i].siguiente = -1;
+    END
 END
 
 //------------------------------------------------------------------------------
